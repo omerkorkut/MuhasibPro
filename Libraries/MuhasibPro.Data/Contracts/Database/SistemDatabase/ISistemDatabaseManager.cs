@@ -1,0 +1,13 @@
+﻿using MuhasibPro.Domain.Models.DatabaseResultModel;
+
+namespace MuhasibPro.Data.Concrete.Database.SistemDatabase
+{
+    public interface ISistemDatabaseManager
+    {
+        Task<bool> InitializeSistemDatabaseAsync(CancellationToken cancellationToken = default);
+        Task<DatabaseConnectionAnalysis> GetSistemDatabaseStateAsync(CancellationToken cancellationToken);
+        Task<(bool isValid, string Message)> ValidateSistemDatabaseAsync(CancellationToken cancellationToken);
+
+
+    }
+}
