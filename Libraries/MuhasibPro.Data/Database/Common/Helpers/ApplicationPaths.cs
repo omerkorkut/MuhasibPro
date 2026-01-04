@@ -73,7 +73,7 @@ namespace MuhasibPro.Data.Database.Common.Helpers
                     _logger.LogWarning("Dosya yolu çok uzun: {Length} karakter", filePath.Length);
                     return false;
                 }
-
+                
                 return File.Exists(filePath);
             } catch(PathTooLongException ex)
             {
@@ -91,7 +91,7 @@ namespace MuhasibPro.Data.Database.Common.Helpers
         /// <summary>
         /// Güvenli dizin oluşturma
         /// </summary>
-        private string SafeCreateDirectory(string directoryPath)
+        public string SafeCreateDirectory(string directoryPath)
         {
             if(string.IsNullOrWhiteSpace(directoryPath))
                 throw new ArgumentException("Dizin yolu boş olamaz");
@@ -219,13 +219,14 @@ namespace MuhasibPro.Data.Database.Common.Helpers
         public bool SistemDatabaseFileExists()
         {
             var filePath = GetSistemDatabaseFilePath();
-            return SafeFileExists(filePath);
+            return SafeFileExists(filePath);           
+           
         }
 
         public bool TenantDatabaseFileExists(string databaseName)
         {
             var filePath = GetTenantDatabaseFilePath(databaseName);
-            return SafeFileExists(filePath);
+            return SafeFileExists(filePath);            
         }
 
         public long GetSistemDatabaseSize()
@@ -276,7 +277,7 @@ namespace MuhasibPro.Data.Database.Common.Helpers
         #endregion
 
         #region SQLite Validation
-        public bool IsDatabaseFileValid(string filePath)
+        public bool IsSqliteDatabaseFileValid(string filePath)
         {
             if(string.IsNullOrWhiteSpace(filePath))
                 return false;
@@ -294,13 +295,13 @@ namespace MuhasibPro.Data.Database.Common.Helpers
         public bool IsSistemDatabaseValid()
         {
             var filePath = GetSistemDatabaseFilePath();
-            return IsDatabaseFileValid(filePath);
+            return IsSqliteDatabaseFileValid(filePath);
         }
 
         public bool IsTenantDatabaseValid(string databaseName)
         {
             var filePath = GetTenantDatabaseFilePath(databaseName);
-            return IsDatabaseFileValid(filePath);
+            return IsSqliteDatabaseFileValid(filePath);
         }
 
         private FileInfo GetFileInfoSafe(string filePath)

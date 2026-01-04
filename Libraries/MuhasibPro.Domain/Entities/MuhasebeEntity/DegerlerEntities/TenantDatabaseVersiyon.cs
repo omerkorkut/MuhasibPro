@@ -8,8 +8,8 @@ namespace MuhasibPro.Domain.Entities.MuhasebeEntity.DegerlerEntities
     {
         [Key]
         public string DatabaseName { get; set; }       
-        public string TenantDbVersion { get; set; } = "1.0.0";
-        public DateTime TenantDbLastUpdate { get; set; } = DateTime.Now;
+        public string CurrentTenantDbVersion { get; set; }
+        public DateTime CurrentTenantDbLastUpdate { get; set; }
         public string? PreviousTenantDbVersiyon { get; set; }
 
     }

@@ -1,11 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Logging;
 using MuhasibPro.Data.Concrete.Database.SistemDatabase;
 using MuhasibPro.Data.Contracts.Database.Common.Helpers;
 using MuhasibPro.Data.Database.Common.Helpers;
 using MuhasibPro.Data.Database.Extensions;
 using MuhasibPro.Data.DataContext;
+using MuhasibPro.Domain.Entities.MuhasebeEntity.DegerlerEntities;
 using MuhasibPro.Domain.Entities.SistemEntity;
+using MuhasibPro.Domain.Enum.DatabaseEnum;
 using MuhasibPro.Domain.Models.DatabaseResultModel;
 
 namespace MuhasibPro.Data.Database.SistemDatabase
@@ -27,15 +30,15 @@ namespace MuhasibPro.Data.Database.SistemDatabase
         private bool _isSistemDatabaseFileExist => _applicationPaths.SistemDatabaseFileExists();
 
         public SistemMigrationManager(
-            SistemDbContext dbContext,
             ILogger<SistemMigrationManager> logger,
             ISistemBackupManager backupManager,
-            IApplicationPaths applicationPaths)
+            IApplicationPaths applicationPaths,
+            SistemDbContext dbContext)
         {
-            _dbContext = dbContext;
             _logger = logger;
             _backupManager = backupManager;
             _applicationPaths = applicationPaths;
+            _dbContext = dbContext;
         }
 
         private async Task<bool> InternalInitializeAsync(CancellationToken cancellationToken)
@@ -47,16 +50,16 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                     // ⭐ DATABASE YOK: YENİ OLUŞTUR
                     _logger.LogInformation("Database dosyası bulunamadı, yeni oluşturuluyor: {Database}", _databaseName);
 
-                    var createResult = await _dbContext.ExecuteCreatingDatabaseAsync(
+                var createResult = await _dbContext.ExecuteCreatingDatabaseAsync(
                         databaseName: _databaseName,
                         logger: _logger,
                         commandTimeoutMinutes: 5,
-                        ct: cancellationToken);
+                    ct: cancellationToken).ConfigureAwait(false);
 
                     if(createResult.IsCreatedSuccess)
                     {
                         // İlk kurulumda version kaydı oluştur
-                        await CreateInitialVersionRecordAsync("1.0.0.0", cancellationToken);
+                        await DatabaseVersionFromMigrationsAsync(_dbContext, cancellationToken);
                         return true;
                     }
 
@@ -76,7 +79,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                         databaseValid: _isSistemDatabaseValid,
                         tablesToCheck: TablesToCheck,
                         logger: _logger,
-                        ct: cancellationToken);
+                        ct: cancellationToken).ConfigureAwait(false);
 
                     if(!analysis.CanConnect)
                     {
@@ -85,21 +88,33 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                     }
 
                     // Migration uygula
+                    // Local wrapper functions to ensure correct delegate signatures and proper ConfigureAwait usage
+                    async Task<bool> RestoreWrapper()
+                    {
+                        return await _backupManager.RestoreFromLatestBackupAsync(cancellationToken).ConfigureAwait(false);
+                    }
+
+                    async Task<bool> BackupWrapper()
+                    {
+                        var res = await _backupManager.CreateBackupAsync(DatabaseBackupType.Automatic, cancellationToken).ConfigureAwait(false);
+                        return res != null && res.IsBackupComleted;
+                    }
+
                     var migrationResult = await _dbContext.ExecuteMigrationsWithBackupCheckAsync(
                         databaseName: _databaseName,
                         isDatabaseExists: _isSistemDatabaseFileExist,
                         databaseValid: _isSistemDatabaseValid,
                         tablesToCheck: TablesToCheck,
-                        restoreAction: async () => await _backupManager.RestoreFromLatestBackupAsync(cancellationToken),
-                        backupAction: async () => await _backupManager.CreateBackupAsync(cancellationToken),
+                        restoreAction: RestoreWrapper,
+                        backupAction: BackupWrapper,
                         logger: _logger,
                         commandTimeoutMinutes: 5,
-                        ct: cancellationToken);
+                        ct: cancellationToken).ConfigureAwait(false);
 
                     if(migrationResult.IsHealthy)
                     {
                         // ⭐ VERSİYONU GÜNCELLE (migration'dan SONRA)
-                        await UpdateDatabaseVersionFromMigrationsAsync(cancellationToken);
+                        await DatabaseVersionFromMigrationsAsync(_dbContext, cancellationToken).ConfigureAwait(false);
                     }
 
                     return migrationResult.IsHealthy;
@@ -114,40 +129,57 @@ namespace MuhasibPro.Data.Database.SistemDatabase
         public async Task<bool> InitializeSistemDatabaseAsync(CancellationToken cancellationToken)
         {
             // ⭐ GLOBAL LOCK - tek thread migration
-            if(!await _globalMigrationLock.WaitAsync(TimeSpan.FromSeconds(LOCK_TIMEOUT_SECONDS), cancellationToken))
-            {
-                _logger.LogWarning("Migration system is busy, skipping...");
-                return false;
-            }
-
             try
             {
-                return await InternalInitializeAsync(cancellationToken);
-            } finally
+                if (!await _globalMigrationLock.WaitAsync(TimeSpan.FromSeconds(LOCK_TIMEOUT_SECONDS), cancellationToken).ConfigureAwait(false))
+                {
+                    _logger.LogWarning("Migration system is busy, skipping...");
+                    return false;
+                }
+
+                try
+                {
+                    return await InternalInitializeAsync(cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    _globalMigrationLock.Release();
+                }
+            }
+            catch (OperationCanceledException ex)
             {
-                _globalMigrationLock.Release();
+                _logger.LogInformation(ex, "InitializeSistemDatabaseAsync iptal edildi");
+                return false;
             }
         }
 
         public async Task<DatabaseConnectionAnalysis> GetSistemDatabaseStateAsync(
             CancellationToken cancellationToken)
         {
-            return await _dbContext.GetConnectionFullStateAsync(
+            using var context = _dbContext;
+            var result = await context.GetConnectionFullStateAsync(
                 _databaseName,
                 _isSistemDatabaseFileExist,
                 _isSistemDatabaseValid,
                 TablesToCheck,
                 _logger,
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
+            return result;
         }
 
         public async Task<List<string>> GetPendingMigrationsAsync(CancellationToken cancellationToken = default)
         {
             try
             {
-                var state = await GetSistemDatabaseStateAsync(cancellationToken);
+                var state = await GetSistemDatabaseStateAsync(cancellationToken).ConfigureAwait(false);
                 return state.PendingMigrations;
-            } catch(Exception ex)
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogInformation(ex, "GetPendingMigrationsAsync iptal edildi");
+                return new List<string>();
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Bekleyen migration'lar alınamadı: {Database}", _databaseName);
                 return new List<string>();
@@ -160,13 +192,13 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             {
                 var versionRecord = await _dbContext.AppDbVersiyonlar
                     .Where(v => v.DatabaseName == _databaseName)
-                    .FirstOrDefaultAsync(cancellationToken);
+                    .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 
                 if(versionRecord != null)
                     return versionRecord.CurrentDatabaseVersion;
 
                 // Version kaydı yoksa state'ten al
-                var state = await GetSistemDatabaseStateAsync(cancellationToken);
+                var state = await GetSistemDatabaseStateAsync(cancellationToken).ConfigureAwait(false);
                 return state.CurrentVersion;
             } catch(Exception ex)
             {
@@ -175,84 +207,73 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             }
         }
 
-        private async Task CreateInitialVersionRecordAsync(string version, CancellationToken cancellationToken)
+        private async Task DatabaseVersionFromMigrationsAsync(SistemDbContext context, CancellationToken cancellationToken)
         {
             try
-            {
-                var initialVersion = new AppDbVersion
-                {
-                    DatabaseName = _databaseName,
-                    CurrentDatabaseVersion = version,
-                    PreviousDatabaseVersion = null,
-                    CurrentDatabaseLastUpdate = DateTime.UtcNow,
-                };
+            {                
 
-                _dbContext.AppDbVersiyonlar.Add(initialVersion);
-                await _dbContext.SaveChangesAsync(cancellationToken);
-
-                _logger.LogInformation("İlk versiyon kaydı oluşturuldu: {Database} - {Version}", _databaseName, version);
-            } catch(Exception ex)
-            {
-                _logger.LogError(ex, "Versiyon kaydı oluşturulamadı: {Database}", _databaseName);
-                // Kritik değil, devam et
-            }
-        }
-
-        private async Task UpdateDatabaseVersionFromMigrationsAsync(CancellationToken cancellationToken)
-        {
-            try
-            {
-                // Migration'dan SONRA applied migration'ları al
-                var appliedMigrations = await _dbContext.Database.GetAppliedMigrationsAsync(cancellationToken);
+                var appliedMigrations = await context.Database
+                    .GetAppliedMigrationsAsync(cancellationToken)
+                    .ConfigureAwait(false);
 
                 var latestMigration = appliedMigrations.LastOrDefault();
-                if(string.IsNullOrEmpty(latestMigration))
+                if (string.IsNullOrEmpty(latestMigration))
                     return;
 
-                // Migration isminden versiyon üret
-                var newVersion = ExtractVersionFromMigration(latestMigration);
+                var newVersion = DatabaseUtilityHelper.ExtractVersionFromMigration(latestMigration);
 
-                // Versiyonu güncelle
-                var versionRecord = await _dbContext.AppDbVersiyonlar
+                // Transaction başlat
+                await using var transaction = await context.Database
+                    .BeginTransactionAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                var versionRecord = await context.AppDbVersiyonlar
                     .Where(v => v.DatabaseName == _databaseName)
-                    .FirstOrDefaultAsync(cancellationToken);
+                    .FirstOrDefaultAsync(cancellationToken)
+                    .ConfigureAwait(false);
 
-                if(versionRecord == null)
+                if (versionRecord == null)
                 {
-                    await CreateInitialVersionRecordAsync(newVersion, cancellationToken);
-                } else
+                    // AYNI CONTEXT'i kullan
+                    var firstVersion = new AppDbVersion
+                    {
+                        DatabaseName = _databaseName,
+                        CurrentDatabaseLastUpdate = DateTime.UtcNow,
+                        CurrentDatabaseVersion = "1.0.0.0",
+                        PreviousDatabaseVersion = null
+                    };
+
+                    await context.AppDbVersiyonlar
+                        .AddAsync(firstVersion, cancellationToken)
+                        .ConfigureAwait(false);
+
+                    _logger.LogInformation(
+                        "İlk versiyon kaydı oluşturuldu: {Database} - {Version}",
+                        _databaseName,
+                        newVersion);
+                }
+                else
                 {
                     versionRecord.PreviousDatabaseVersion = versionRecord.CurrentDatabaseVersion;
                     versionRecord.CurrentDatabaseVersion = newVersion;
                     versionRecord.CurrentDatabaseLastUpdate = DateTime.UtcNow;
-
-
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-
-                    _logger.LogInformation(
-                        "Database versiyonu güncellendi: {Database} ({Old} → {New})",
-                        _databaseName,
-                        versionRecord.PreviousDatabaseVersion,
-                        newVersion);
                 }
-            } catch(Exception ex)
+
+                await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+                _logger.LogInformation(
+                    "Database versiyonu güncellendi: {Database} ({Old} → {New})",
+                    _databaseName,
+                    versionRecord?.PreviousDatabaseVersion ?? "null",
+                    newVersion);
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Database versiyonu güncellenemedi: {Database}", _databaseName);
-                // Kritik değil, migration başarılı sayılabilir
             }
         }
 
-        private string ExtractVersionFromMigration(string migrationName)
-        {
-            // Örnek: "20240115143000_InitialCreate" → "2024.01.15.1430"
-            if(migrationName.Length >= 14 && migrationName.Take(14).All(char.IsDigit))
-            {
-                var ts = migrationName.AsSpan(0, 14);
-                return $"{ts.Slice(0, 4)}.{ts.Slice(4, 2)}.{ts.Slice(6, 2)}.{ts.Slice(8, 4)}";
-            }
 
-            // Migration sayısına göre
-            return $"1.0.0.{migrationName.GetHashCode() % 10000}";
-        }
     }
 }

@@ -8,7 +8,7 @@
         /// </summary>
         /// <param name="databaseName"></param>
         void CleanupSqliteWalFiles(string databaseName);
-        bool IsDatabaseFileValid(string filePath);
+        bool IsSqliteDatabaseFileValid(string filePath);
         /// <summary>
         /// Kullanıcının AppData\Local\{appName} yolunu döndürür Production ortamında kullanılır
         /// </summary>

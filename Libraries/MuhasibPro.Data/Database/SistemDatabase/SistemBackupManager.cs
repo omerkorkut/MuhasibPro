@@ -55,7 +55,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 }
 
                 var backupDir = _applicationPaths.GetBackupFolderPath();
-                var backupFileName = DatabaseNamingHelper.GenerateBackupFileName(databaseName: _databaseName);
+                var backupFileName = DatabaseUtilityHelper.GenerateBackupFileName(databaseName: _databaseName);
                 var backupPath = Path.Combine(backupDir, backupFileName);
                 try
                 {
@@ -78,28 +78,41 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 // 4. Backup al
                 try
                 {
-                    await _backupManager.SafeFileCopyAsync(sourceFilePath, backupPath, cancellationToken);
+                    await _backupManager.SafeFileCopyAsync(sourceFilePath, backupPath, cancellationToken).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     result.Message = "➕ Yedekleme işlemi başlatıldı...";
                     // 5. DOĞRULAMA
-                    if(_backupManager.IsValidBackupFile(
+                    if (_backupManager.IsValidBackupFile(
                         Path.GetDirectoryName(backupPath),
                         Path.GetFileName(backupFileName)))
                     {
                         result.IsBackupComleted = true;
                         result.Message = "✅ Yedekleme işlemi başarıyla tamamlandı.";
-                    } else
+                    }
+                    else
                     {
-                        if(File.Exists(backupPath))
-                            File.Delete(backupPath);
+                        try
+                        {
+                            if (File.Exists(backupPath))
+                                File.Delete(backupPath);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogWarning(ex, "Başarısız backup dosyası silinirken hata: {Path}", backupPath);
+                        }
 
                         result.Message = "❌ Yedek dosyası oluşturulurken disk hatası oluştu.";
                         return result;
                     }
-                } catch(OperationCanceledException ex)
+                }
+                catch (OperationCanceledException ex)
                 {
                     // 6. Hata
-                    _logger.LogError(ex, "Yedekleme iptal edildi!");                    
+                    _logger.LogInformation(ex, "Yedekleme iptal edildi.");
+                    result.IsBackupComleted = false;
                     result.Message = "⏹️ Yedekleme iptal edildi!";
+                    return result;
                 }
 
                 _logger?.LogInformation(
@@ -165,15 +178,18 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                             BackupFileName = fileInfo.Name,
                             BackupFilePath = fileInfo.FullName,
                             BackupFileSizeBytes = fileInfo.Length,
-                            LastBackupDate = fileInfo.CreationTimeUtc,
+                            // Use LastWriteTimeUtc - reflects last modification
+                            LastBackupDate = fileInfo.LastWriteTimeUtc,
                             BackupType = _backupManager.DetermineBackupType(fileInfo.Name),
                             DatabaseName = _databaseName,
                             IsBackupComleted = isValidBackup && isSqliteValid, // ✅ İkisi birden
                         };
 
                         backupList.Add(backup);
-                    } catch
+                    }
+                    catch (Exception ex)
                     {
+                        _logger?.LogDebug(ex, "Backup dosyası analiz edilirken atlandı: {File}", filePath);
                         // Geçersiz dosya, atla
                         continue;
                     }
@@ -253,7 +269,9 @@ namespace MuhasibPro.Data.Database.SistemDatabase
 
                 // 2. CLEAR CONNECTION POOLS
                 Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-                await Task.Delay(BACKUP_DELAY_MS * 2, cancellationToken);
+                await Task.Delay(BACKUP_DELAY_MS * 2, cancellationToken).ConfigureAwait(false);
+
+                cancellationToken.ThrowIfCancellationRequested();
 
                 // 3. CREATE SAFETY BACKUP (ROLLBACK için)
                 if(File.Exists(targetPath))
@@ -275,42 +293,47 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 tempRestorePath = targetPath + ".restoring_" + Guid.NewGuid().ToString("N").Substring(0, 8);
 
                 // 4a. Backup'ı TEMP dosyasına kopyala
-                await _backupManager.SafeFileCopyAsync(backupPath, tempRestorePath, cancellationToken);
+                await _backupManager.SafeFileCopyAsync(backupPath, tempRestorePath, cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
 
                 // 4b. TEMP dosyasını doğrula
                 _backupManager.CleanupSqliteWalFiles(tempRestorePath);
 
-                if(!_applicationPaths.IsDatabaseFileValid(tempRestorePath)) // Yeni method
+                if (!_applicationPaths.IsDatabaseFileValid(tempRestorePath)) // Yeni method
                 {
                     throw new InvalidOperationException("Restore edilen temp dosya geçersiz");
                 }
 
                 // 4c. Eski dosyayı sil ve TEMP'i ATOMIC MOVE et
-                bool deleteOriginalSuccess = false;
-                int retryCount = 0;
-
-                while(!deleteOriginalSuccess && retryCount < 3)
+                // 4c. Deneyerek atomic swap: önce File.Replace (platform destekliyorsa), yoksa sil+move
+                try
                 {
-                    try
+                    if (File.Exists(targetPath))
                     {
-                        if(File.Exists(targetPath))
+                        try
+                        {
+                            // File.Replace will atomically replace destination with source
+                            File.Replace(tempRestorePath, targetPath, null);
+                        }
+                        catch (PlatformNotSupportedException)
+                        {
+                            // Fallback: delete and move
                             File.Delete(targetPath);
-
-                        deleteOriginalSuccess = true;
-                    } catch(IOException) when (retryCount < 2)
-                    {
-                        retryCount++;
-                        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-                        await Task.Delay(100 * retryCount, cancellationToken);
+                            File.Move(tempRestorePath, targetPath);
+                        }
                     }
+                    else
+                    {
+                        File.Move(tempRestorePath, targetPath);
+                    }
+
+                    tempRestorePath = null; // Başarılı oldu, temizlemeyelim
                 }
-
-                if(!deleteOriginalSuccess)
-                    throw new IOException("Eski database dosyası silinemiyor, restore iptal");
-
-                // ⭐⭐ CRITICAL: ATOMIC MOVE
-                File.Move(tempRestorePath, targetPath);
-                tempRestorePath = null; // Başarılı oldu, temizlemeyelim
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Atomic move/replace başarısız: {Target}", targetPath);
+                    throw;
+                }
 
                 // 5. POST-RESTORE CLEANUP
                 _backupManager.CleanupSqliteWalFiles(targetPath);
@@ -327,13 +350,15 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 }
 
                 // 7. SUCCESS - Cleanup safety backup
-                if(safetyBackupPath != null && File.Exists(safetyBackupPath))
+                if (safetyBackupPath != null && File.Exists(safetyBackupPath))
                 {
                     try
                     {
                         File.Delete(safetyBackupPath);
-                    } catch
-                    { /* Log warning if needed */
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogWarning(ex, "Safety backup silinirken hata: {Path}", safetyBackupPath);
                     }
                 }
 
@@ -341,7 +366,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 result.IsRestoreSuccess = true;
                 result.Message = $"{backupFileName} yedeği başarıyla geri yüklendi.";
                 _logger?.LogInformation("Atomic restore başarılı: {DatabaseName}", _databaseName);
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 result.HasError = true;
                 result.Message = $"Geri yükleme sırasında hata: {ex.Message}";
@@ -351,23 +377,27 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 try
                 {
                     var targetPath = _applicationPaths.GetSistemDatabaseFilePath();
-                    await RollbackToSafetyBackupAsync(targetPath, safetyBackupPath, cancellationToken);
-                } catch(Exception rollbackEx)
+                    await RollbackToSafetyBackupAsync(targetPath, safetyBackupPath, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception rollbackEx)
                 {
                     _logger?.LogCritical(
-                    rollbackEx,
-                    "CRITICAL: Restore ROLLBACK de başarısız! Database bozuk olabilir: {DatabaseName}",
-                    _databaseName);
+                        rollbackEx,
+                        "CRITICAL: Restore ROLLBACK de başarısız! Database bozuk olabilir: {DatabaseName}",
+                        _databaseName);
                 }
-            } finally
+            }
+            finally
             {
                 // TEMP dosyalarını temizle
                 try
                 {
-                    if(tempRestorePath != null && File.Exists(tempRestorePath))
+                    if (tempRestorePath != null && File.Exists(tempRestorePath))
                         File.Delete(tempRestorePath);
-                } catch
-                { /* ignore */
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "Temp dosyası silinirken hata: {Path}", tempRestorePath);
                 }
             }
 
@@ -387,7 +417,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 _logger?.LogWarning("Restore başarısız, safety backup'a geri dönülüyor...");
 
                 Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-                await Task.Delay(BACKUP_DELAY_MS, ct);
+                await Task.Delay(BACKUP_DELAY_MS, ct).ConfigureAwait(false);
 
                 if(File.Exists(targetPath))
                     File.Delete(targetPath);

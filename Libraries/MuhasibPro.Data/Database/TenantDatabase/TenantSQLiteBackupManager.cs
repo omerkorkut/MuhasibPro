@@ -75,7 +75,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                     return result;
                 }
                 var backupDir = GetTenantBackupFolderPath;
-                var backupFileName = DatabaseNamingHelper.GenerateBackupFileName(databaseName);
+                var backupFileName = DatabaseUtilityHelper.GenerateBackupFileName(databaseName);
                 var backupPath = Path.Combine(backupDir, backupFileName);
                 try
                 {

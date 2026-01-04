@@ -3,7 +3,6 @@ using MuhasibPro.Data.Concrete.Database.SistemDatabase;
 using MuhasibPro.Data.Contracts.Database.Common.Helpers;
 using MuhasibPro.Data.Database.Common.Helpers;
 using MuhasibPro.Data.Database.Extensions;
-using MuhasibPro.Data.DataContext;
 using MuhasibPro.Domain.Models.DatabaseResultModel;
 
 namespace MuhasibPro.Data.Database.SistemDatabase
@@ -19,8 +18,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             ILogger<SistemDatabaseManager> logger,
             ISistemMigrationManager migrationManager,
             ISistemBackupManager backupManager,
-            IApplicationPaths applicationPaths,
-            SistemDbContext dbContext)
+            IApplicationPaths applicationPaths
+       )
         {
             _logger = logger;
             _migrationManager = migrationManager;
@@ -28,20 +27,11 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             _applicationPaths = applicationPaths;
            
         }      
-        private bool _isSistemDatabaseExist => _applicationPaths.SistemDatabaseFileExists();
-
         public async Task<bool> InitializeSistemDatabaseAsync(CancellationToken cancellationToken = default)
         {
             try
             {
-                if (!_isSistemDatabaseExist)
-                    return false;
-
-                _logger.LogInformation("Creating new database or update database: {DatabaseName}", _databaseName);
-
-                var intializeDatabase = await _migrationManager.InitializeSistemDatabaseAsync(cancellationToken);
-
-                _logger.LogInformation("Database created or updated successfully: {DatabaseName}", _databaseName);
+                var intializeDatabase = await _migrationManager.InitializeSistemDatabaseAsync(cancellationToken).ConfigureAwait(false);               
                 return intializeDatabase;
             }
             catch (Exception ex)
@@ -55,7 +45,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             var analysis = new DatabaseConnectionAnalysis();
             try
             {              
-                var databaseHealty = await _migrationManager.GetSistemDatabaseStateAsync(cancellationToken);
+                var databaseHealty = await _migrationManager.GetSistemDatabaseStateAsync(cancellationToken).ConfigureAwait(false);
                 if(databaseHealty == null)
                 {
                     databaseHealty.HasError = true;

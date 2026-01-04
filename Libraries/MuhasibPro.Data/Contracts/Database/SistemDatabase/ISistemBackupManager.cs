@@ -11,7 +11,7 @@ namespace MuhasibPro.Data.Concrete.Database.SistemDatabase
         /// <summary>
         /// Backup'tan geri yükler
         /// </summary>
-        Task<bool> RestoreBackupAsync(string backupFileName, CancellationToken cancellationToken;
+        Task<bool> RestoreBackupAsync(string backupFileName, CancellationToken cancellationToken);
 
         /// <summary>
         /// Mevcut backup'ları listeler

@@ -65,8 +65,14 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         /// <summary>
         /// SQLite bağlantısını test eder
         /// </summary>
-        public async Task<bool> ValidateConnectionStringAsync(string databaseName, CancellationToken cancellationToken = default)
+        public async Task<(bool canConnect, string message, string connectionString)> ValidateConnectionStringAsync(string databaseName, CancellationToken cancellationToken = default)
         {
+            // 2. File check
+            var dbPath = _applicationPaths.GetTenantDatabaseFilePath(databaseName);
+            if (!File.Exists(dbPath))
+            {
+                return (false, "Veritabanı dosyası bulunamadı", string.Empty);
+            }
             try
             {
                 var connectionString = CreateConnectionString(databaseName);
@@ -78,25 +84,35 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 await using var command = connection.CreateCommand();
                 command.CommandText = "SELECT 1";
                 var result = await command.ExecuteScalarAsync(cancellationToken);
-
+                if (result?.ToString() != "1")
+                {
+                    return (false, "🔴 Bağlantı yanıt vermiyor!", string.Empty);
+                }
                 var isSuccess = Convert.ToInt32(result) == 1;
 
                 _logger.LogInformation(
-                    "SQLite connection test {Result} for {DatabaseName}",
-                    isSuccess ? "başarılı" : "başarısız",
+                    "SQLite bağlantı testi {Sonuç} {DatabaseName} için",
+                    isSuccess ? "Başarılı" : "Başarısız",
                     databaseName);
 
-                return isSuccess;
+                return (isSuccess, "🔗 Bağlantı başarılı", connectionString);
             }
-            catch (SqliteException ex)
+            catch (SqliteException ex) when (ex.SqliteErrorCode == 14)
             {
-                _logger.LogWarning(ex, "SQLite bağlantı testi başarısız: {DatabaseName}", databaseName);
-                return false;
+                return (false, "⚠️ Veritabanı dosyası açılamadı!", string.Empty);
+            }
+            catch (SqliteException ex) when (ex.SqliteErrorCode == 26)
+            {
+                return (false, "⚠️ Bilinmeyen veritabanı dosyası!", string.Empty);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Beklenmeyen hata: {DatabaseName}", databaseName);
-                return false;
+                _logger.LogError(ex, "Bağlantı testi başarısız: {DatabaseName}", databaseName);
+                return (false, $"Bağlantı hatası: {ex.Message}", string.Empty);
             }
         }
     }
