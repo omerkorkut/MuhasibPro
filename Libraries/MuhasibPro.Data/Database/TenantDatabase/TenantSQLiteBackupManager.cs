@@ -145,7 +145,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                     {
                         var fileInfo = new FileInfo(filePath);
                         var isValidBackup = _backupManager.IsValidBackupFile(backupDir, fileInfo.Name);
-                        var isSqliteValid = _applicationPaths.IsDatabaseFileValid(filePath);
+                        var isSqliteValid = _applicationPaths.IsSqliteDatabaseFileValid(filePath);
                         var backup = new DatabaseBackupResult
                         {
                             BackupDirectory = backupDir,
@@ -268,7 +268,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 // 4b. TEMP dosyasını doğrula
                 _backupManager.CleanupSqliteWalFiles(tempRestorePath);
 
-                if (!_applicationPaths.IsDatabaseFileValid(tempRestorePath)) // Yeni method
+                if (!_applicationPaths.IsSqliteDatabaseFileValid(tempRestorePath)) // Yeni method
                 {
                     throw new InvalidOperationException("Restore edilen temp dosya geçersiz");
                 }
@@ -305,7 +305,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 _backupManager.CleanupSqliteWalFiles(targetPath);
 
                 // 6. FINAL VALIDATION
-                if (!_applicationPaths.IsDatabaseFileValid(targetPath))
+                if (!_applicationPaths.IsSqliteDatabaseFileValid(targetPath))
                 {
                     // ROLLBACK safety backup'a
                     await RollbackToSafetyBackupAsync(targetPath, safetyBackupPath, cancellationToken);
