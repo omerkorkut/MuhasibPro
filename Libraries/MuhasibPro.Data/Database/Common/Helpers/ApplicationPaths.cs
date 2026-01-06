@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using MuhasibPro.Data.Contracts.Database.Common.Helpers;
+﻿using MuhasibPro.Data.Contracts.Database.Common.Helpers;
 using System.Text;
 
 namespace MuhasibPro.Data.Database.Common.Helpers
@@ -20,7 +19,6 @@ namespace MuhasibPro.Data.Database.Common.Helpers
     public class ApplicationPaths : IApplicationPaths
     {
         private readonly IEnvironmentDetector _environmentDetector;
-        private readonly ILogger<ApplicationPaths> _logger;
         private readonly string _applicationName;
 
         // Simple cache - thread-safe için Lazy<T>
@@ -31,9 +29,9 @@ namespace MuhasibPro.Data.Database.Common.Helpers
                 var dirInfo = new DirectoryInfo(currentDir);
 
                 // Max 6 levels up (8 fazlaydı)
-                for(int i = 0; i < 6 && dirInfo?.Parent != null; i++)
+                for (int i = 0; i < 6 && dirInfo?.Parent != null; i++)
                 {
-                    if(dirInfo.GetFiles("*.csproj", SearchOption.TopDirectoryOnly).Length > 0 ||
+                    if (dirInfo.GetFiles("*.csproj", SearchOption.TopDirectoryOnly).Length > 0 ||
                         dirInfo.GetFiles("*.sln", SearchOption.TopDirectoryOnly).Length > 0)
                         return dirInfo.FullName;
 
@@ -47,11 +45,9 @@ namespace MuhasibPro.Data.Database.Common.Helpers
 
         public ApplicationPaths(
             IEnvironmentDetector environmentDetector,
-            ILogger<ApplicationPaths> logger,
             string applicationName = "MuhasibPro")
         {
             _environmentDetector = environmentDetector;
-            _logger = logger;
             _applicationName = applicationName ?? "MuhasibPro";
         }
 
@@ -62,28 +58,29 @@ namespace MuhasibPro.Data.Database.Common.Helpers
         /// </summary>
         private bool SafeFileExists(string filePath)
         {
-            if(string.IsNullOrWhiteSpace(filePath))
+            if (string.IsNullOrWhiteSpace(filePath))
                 return false;
 
             try
             {
                 // Path too long kontrolü (Windows için önemli)
-                if(filePath.Length > 260)
+                if (filePath.Length > 260)
                 {
-                    _logger.LogWarning("Dosya yolu çok uzun: {Length} karakter", filePath.Length);
+
                     return false;
                 }
-                
+
                 return File.Exists(filePath);
-            } catch(PathTooLongException ex)
+            }
+            catch (PathTooLongException)
             {
-                _logger.LogWarning(ex, "Dosya yolu çok uzun: {Path}", filePath);
                 return false;
-            } catch(Exception ex) when (ex is IOException ||
+            }
+            catch (Exception ex) when (ex is IOException ||
                 ex is UnauthorizedAccessException ||
                 ex is NotSupportedException)
             {
-                _logger.LogDebug(ex, "Dosya kontrolü başarısız: {Path}", filePath);
+
                 return false;
             }
         }
@@ -93,22 +90,23 @@ namespace MuhasibPro.Data.Database.Common.Helpers
         /// </summary>
         public string SafeCreateDirectory(string directoryPath)
         {
-            if(string.IsNullOrWhiteSpace(directoryPath))
+            if (string.IsNullOrWhiteSpace(directoryPath))
                 throw new ArgumentException("Dizin yolu boş olamaz");
 
             try
             {
                 Directory.CreateDirectory(directoryPath);
                 return directoryPath;
-            } catch(Exception ex) when (ex is IOException ||
+            }
+            catch (Exception ex) when (ex is IOException ||
                 ex is UnauthorizedAccessException ||
                 ex is NotSupportedException)
             {
-                _logger.LogError(ex, "Dizin oluşturma başarısız: {Path}", directoryPath);
+
                 throw new InvalidOperationException($"Dizin oluşturulamadı: {directoryPath}", ex);
             }
         }
-            #endregion
+        #endregion
 
         #region Base Paths
         public string GetAppDataFolderPath()
@@ -124,7 +122,7 @@ namespace MuhasibPro.Data.Database.Common.Helpers
 
         private string GetRootDataPath()
         { return _environmentDetector.IsDevelopment() ? GetDevelopmentProjectFolderPath() : GetAppDataFolderPath(); }
-            #endregion
+        #endregion
 
         #region Databases Structure
         // [ROOT]/Databases/
@@ -151,7 +149,7 @@ namespace MuhasibPro.Data.Database.Common.Helpers
             var sanitizedName = SanitizeDatabaseName(databaseName);
             var tenantPath = GetTenantDatabaseFolderPath();
 
-            if(!sanitizedName.AsSpan().EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+            if (!sanitizedName.AsSpan().EndsWith(".db", StringComparison.OrdinalIgnoreCase))
                 return Path.Combine(tenantPath, sanitizedName + ".db");
             return Path.Combine(tenantPath, sanitizedName);
         }
@@ -161,38 +159,38 @@ namespace MuhasibPro.Data.Database.Common.Helpers
 
         public string SanitizeDatabaseName(string databaseName)
         {
-            if(string.IsNullOrWhiteSpace(databaseName))
+            if (string.IsNullOrWhiteSpace(databaseName))
                 throw new ArgumentException("Database adı boş olamaz");
 
             // Trim et ve kontrol et
             var trimmed = databaseName.Trim();
 
-            if(trimmed.Length > DatabaseConstants.MAX_DATABASE_NAME_LENGTH)
+            if (trimmed.Length > DatabaseConstants.MAX_DATABASE_NAME_LENGTH)
                 throw new ArgumentException(
                     $"Database adı {DatabaseConstants.MAX_DATABASE_NAME_LENGTH} karakterden uzun olamaz");
 
 
             // LINQ yerine StringBuilder (daha verimli)
             var sanitized = new StringBuilder(trimmed.Length);
-            foreach(char c in trimmed)
+            foreach (char c in trimmed)
             {
-                if(Array.IndexOf(_invalidFileNameChars, c) == -1) // Contains yerine
+                if (Array.IndexOf(_invalidFileNameChars, c) == -1) // Contains yerine
                     sanitized.Append(c);
             }
 
             var result = sanitized.ToString().Trim();
 
-            if(string.IsNullOrEmpty(result))
+            if (string.IsNullOrEmpty(result))
                 throw new ArgumentException("Database adı geçersiz");
 
             // Windows rezerve dosya isimleri
             var fileNameWithoutExt = Path.GetFileNameWithoutExtension(result);
 
-            if(_reservedNames.Contains(fileNameWithoutExt))
+            if (_reservedNames.Contains(fileNameWithoutExt))
                 throw new ArgumentException($"'{result}' rezerve bir dosya adıdır");
 
             // Sonunda .db yoksa ekle
-            if(!result.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+            if (!result.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
                 result += ".db";
 
             return result;
@@ -213,20 +211,20 @@ namespace MuhasibPro.Data.Database.Common.Helpers
             var path = Path.Combine(GetBackupFolderPath(), DatabaseConstants.TENANT_BACKUPS_FOLDER);
             return SafeCreateDirectory(path);
         }
-            #endregion
+        #endregion
 
         #region Database Exists & Validation
         public bool SistemDatabaseFileExists()
         {
             var filePath = GetSistemDatabaseFilePath();
-            return SafeFileExists(filePath);           
-           
+            return SafeFileExists(filePath);
+
         }
 
         public bool TenantDatabaseFileExists(string databaseName)
         {
             var filePath = GetTenantDatabaseFilePath(databaseName);
-            return SafeFileExists(filePath);            
+            return SafeFileExists(filePath);
         }
 
         public long GetSistemDatabaseSize()
@@ -243,16 +241,17 @@ namespace MuhasibPro.Data.Database.Common.Helpers
 
         private long GetFileSizeSafe(string filePath)
         {
-            if(!SafeFileExists(filePath))
+            if (!SafeFileExists(filePath))
                 return 0L;
 
             try
             {
                 var fileInfo = new FileInfo(filePath);
                 return fileInfo.Length;
-            } catch(Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
-                _logger.LogDebug(ex, "Dosya boyutu alınamadı: {Path}", filePath);
+
                 return 0L;
             }
         }
@@ -279,14 +278,14 @@ namespace MuhasibPro.Data.Database.Common.Helpers
         #region SQLite Validation
         public bool IsSqliteDatabaseFileValid(string filePath)
         {
-            if(string.IsNullOrWhiteSpace(filePath))
+            if (string.IsNullOrWhiteSpace(filePath))
                 return false;
 
-            if(!SafeFileExists(filePath))
+            if (!SafeFileExists(filePath))
                 return false;
 
             var fileInfo = GetFileInfoSafe(filePath);
-            if(fileInfo == null || fileInfo.Length < DatabaseConstants.MIN_SQLITE_FILE_SIZE)
+            if (fileInfo == null || fileInfo.Length < DatabaseConstants.MIN_SQLITE_FILE_SIZE)
                 return false;
 
             return ValidateSqliteHeader(filePath);
@@ -309,9 +308,10 @@ namespace MuhasibPro.Data.Database.Common.Helpers
             try
             {
                 return new FileInfo(filePath);
-            } catch(Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
-                _logger.LogDebug(ex, "FileInfo oluşturulamadı: {Path}", filePath);
+
                 return null;
             }
         }
@@ -372,16 +372,17 @@ namespace MuhasibPro.Data.Database.Common.Helpers
                 Span<byte> header = stackalloc byte[16];
                 int bytesRead = fs.Read(header);
 
-                if(bytesRead < 16)
+                if (bytesRead < 16)
                     return false;
 
                 // MemoryExtensions.SequenceEqual kullan (daha hızlı)
                 return header.SequenceEqual(_sqliteMagicBytes.AsSpan());
-            } catch(Exception ex) when (ex is IOException ||
+            }
+            catch (Exception ex) when (ex is IOException ||
                 ex is UnauthorizedAccessException ||
                 ex is NotSupportedException)
             {
-                _logger.LogDebug(ex, "SQLite header kontrolü başarısız: {Path}", filePath);
+
                 return false;
             }
         }
@@ -400,18 +401,18 @@ namespace MuhasibPro.Data.Database.Common.Helpers
                 var journalFiles = new[]
                 {
                     $"{fileNameWithoutExt}-wal",
-                    $"{fileNameWithoutExt}-shm",                    
+                    $"{fileNameWithoutExt}-shm",
                 };
 
-                foreach(var journalFile in journalFiles)
+                foreach (var journalFile in journalFiles)
                 {
                     var journalPath = Path.Combine(directory, journalFile);
                     SafeDeleteFile(journalPath);
                 }
-            } catch(Exception ex)
+            }
+            catch (Exception)
             {
-                // Debug yerine Warning (daha uygun)
-                _logger.LogWarning(ex, "SQLite journal dosyaları temizlenemedi: {Db}", databaseName);
+
             }
         }
 
@@ -419,11 +420,12 @@ namespace MuhasibPro.Data.Database.Common.Helpers
         {
             try
             {
-                if(File.Exists(filePath))
+                if (File.Exists(filePath))
                     File.Delete(filePath);
-            } catch(Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
-                _logger.LogDebug(ex, "Dosya silinemedi: {Path}", filePath);
+
             }
         }
         #endregion

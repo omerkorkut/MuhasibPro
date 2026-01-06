@@ -10,7 +10,7 @@ public class Kullanici : BaseEntity
     public string KullaniciAdi { get; set; }
     [MaxLength(400)]
     [Required]
-    public string SifreHash { get; set; }
+    public string ParolaHash { get; set; }
     [MaxLength(50)]
     [Required]
     public string Adi { get; set; }
@@ -27,5 +27,4 @@ public class Kullanici : BaseEntity
     public byte[]? Resim { get; set; }
     public byte[]? ResimOnizleme { get; set; }
     public virtual KullaniciRol Rol { get; set; }
-    public Hesap Hesap { get; set; }
 }

@@ -7,7 +7,7 @@ namespace MuhasibPro.Domain.Entities.MuhasebeEntity.DegerlerEntities
     public class TenantDatabaseVersiyon
     {
         [Key]
-        public string DatabaseName { get; set; }       
+        public string DatabaseName { get; set; }
         public string CurrentTenantDbVersion { get; set; }
         public DateTime CurrentTenantDbLastUpdate { get; set; }
         public string? PreviousTenantDbVersiyon { get; set; }

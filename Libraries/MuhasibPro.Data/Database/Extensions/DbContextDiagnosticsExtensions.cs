@@ -41,20 +41,20 @@ namespace MuhasibPro.Data.Database.Extensions
 
             try
             {
-                if(!analysis.IsDatabaseExists)
+                if (!analysis.IsDatabaseExists)
                 {
                     analysis.Message = "Veritabanı dosyası bulunamadı.";
                     logger?.LogWarning("Veritabanı bulunamadı: {Database}", databaseName);
                     return analysis;
                 }
-                if(!analysis.DatabaseValid)
+                if (!analysis.DatabaseValid)
                 {
                     // SQLite'ın dahili bütünlük kontrolü (Hızlıdır)
                     var integrity = await context.Database
                         .SqlQueryRaw<string>("PRAGMA integrity_check")
                         .FirstOrDefaultAsync(ct)
                         .ConfigureAwait(false);
-                    if(integrity?.ToLower() != "ok")
+                    if (integrity?.ToLower() != "ok")
                     {
                         analysis.Message = "Veritabanı bütünlük kontrolü başarısız.";
                         analysis.HasError = true;
@@ -64,7 +64,7 @@ namespace MuhasibPro.Data.Database.Extensions
                 // 1. CONNECTION TEST
 
                 analysis.CanConnect = await context.Database.CanConnectAsync(ct).ConfigureAwait(false);
-                if(!analysis.CanConnect)
+                if (!analysis.CanConnect)
                 {
                     logger?.LogDebug("Database'e bağlanılamadı: {Database}", databaseName);
                     return analysis;
@@ -73,16 +73,16 @@ namespace MuhasibPro.Data.Database.Extensions
                 int existingTableCount = 0;
                 bool hasActualData = false;
 
-                foreach(var tableName in tablesToCheck)
+                foreach (var tableName in tablesToCheck)
                 {
-                    if(!IsValidTableName(tableName))
+                    if (!IsValidTableName(tableName))
                         continue;
 
-                    if(await TableExistsAsync(context, tableName, ct).ConfigureAwait(false))
+                    if (await TableExistsAsync(context, tableName, ct).ConfigureAwait(false))
                     {
                         existingTableCount++;
                         // Sadece bir tabloda bile veri olması, yedek alınması için yeterlidir.
-                        if(!hasActualData && await TableHasRowsSafeAsync(context, tableName, ct).ConfigureAwait(false))
+                        if (!hasActualData && await TableHasRowsSafeAsync(context, tableName, ct).ConfigureAwait(false))
                         {
                             hasActualData = true;
                         }
@@ -105,7 +105,8 @@ namespace MuhasibPro.Data.Database.Extensions
                 "Database analizi tamamlandı: {Database}, Pending: {Count}",
                 databaseName,
                 analysis.PendingMigrations?.Count ?? 0);
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 analysis.HasError = true;
                 analysis.Message = $"{databaseName} analiz edilemedi: {ex.Message}";
@@ -154,7 +155,7 @@ namespace MuhasibPro.Data.Database.Extensions
                     tablesToCheck,
                     logger,
                     ct).ConfigureAwait(false);
-                if(!analysis.IsDatabaseExists)
+                if (!analysis.IsDatabaseExists)
                 {
                     result.HasError = true;
                     result.Message = analysis.ToUIFullMessage();
@@ -166,63 +167,65 @@ namespace MuhasibPro.Data.Database.Extensions
                 result.PendingMigrations = analysis.PendingMigrations;
                 result.AppliedMigrationsCount = analysis.AppliedMigrationsCount;
 
-                if(!analysis.CanConnect)
+                if (!analysis.CanConnect)
                 {
                     result.Message = analysis.ToUIFullMessage();
                     logger?.LogWarning(result.Message);
                     return result;
                 }
 
-                if(!analysis.IsUpdateRequired)
+                if (!analysis.IsUpdateRequired)
                 {
                     result.Message = analysis.ToUIFullMessage();
                     logger?.LogInformation("{Database}: {Message}", databaseName, result.Message);
                     return result;
                 }
                 // 2. DOSYA BOYUT KONTROLÜ 
-                if(!analysis.DatabaseValid && restoreAction != null)
+                if (!analysis.DatabaseValid && restoreAction != null)
                 {
                     bool restoreSuccess = false;
                     int retryCount = 0;
 
-                    while(!restoreSuccess && retryCount < 2) // En fazla 2 kere dene
+                    while (!restoreSuccess && retryCount < 2) // En fazla 2 kere dene
                     {
                         try
                         {
                             restoreSuccess = await restoreAction();
                             result.IsRolledBack = restoreSuccess;
-                        } catch
+                        }
+                        catch
                         {
                             retryCount++;
                             await Task.Delay(1000, ct); // 1 saniye bekle
                         }
                     }
 
-                    if(!restoreSuccess)
+                    if (!restoreSuccess)
                     {
                         result.Message = "Veritabanı meşgul veya kilitli, Geri yüklenemediği için işlem durduruldu.";
                         return result;
                     }
                 }
                 // 3. BACKUP KONTROLÜ (İyileştirilmiş)
-                if(analysis.ShouldTakeBackupBeforeMigration && backupAction != null)
+                if (analysis.ShouldTakeBackupBeforeMigration && backupAction != null)
                 {
                     bool backupSuccess = false;
                     int retryCount = 0;
 
-                    while(!backupSuccess && retryCount < 2) // En fazla 2 kere dene
+                    while (!backupSuccess && retryCount < 2) // En fazla 2 kere dene
                     {
                         try
                         {
                             backupSuccess = await backupAction();
-                        } catch
+                        }
+                        catch
                         {
                             retryCount++;
                             await Task.Delay(1000, ct); // 1 saniye bekle
                         }
                     }
 
-                    if(!backupSuccess)
+                    if (!backupSuccess)
                     {
                         result.Message = "Veritabanı meşgul veya kilitli, yedek alınamadığı için işlem durduruldu.";
                         return result;
@@ -242,7 +245,7 @@ namespace MuhasibPro.Data.Database.Extensions
                     logger,
                     ct).ConfigureAwait(false);
 
-                if(finalAnalysis.DatabaseValid == false && restoreAction != null)
+                if (finalAnalysis.DatabaseValid == false && restoreAction != null)
                 {
                     await restoreAction();
                 }
@@ -255,7 +258,8 @@ namespace MuhasibPro.Data.Database.Extensions
                 "Migration tamamlandı: {Database} ({Count} migration)",
                 databaseName,
                 analysis.PendingMigrations.Count);
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 result.HasError = true;
                 result.Message = $"Migration başarısız: {ex.Message}";
@@ -291,7 +295,7 @@ namespace MuhasibPro.Data.Database.Extensions
                 context.Database.SetCommandTimeout(TimeSpan.FromMinutes(commandTimeoutMinutes));
                 await context.Database.MigrateAsync(ct).ConfigureAwait(false);
                 var canConnect = await context.Database.CanConnectAsync().ConfigureAwait(false);
-                if(canConnect)
+                if (canConnect)
                 {
                     result.IsCreatedSuccess = true;
                     result.CanConnect = canConnect;
@@ -299,7 +303,8 @@ namespace MuhasibPro.Data.Database.Extensions
 
                     logger?.LogInformation("Veritabanı oluşturma işlemi tamamlandı {DatabaseName})", databaseName);
                 }
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 result.HasError = true;
                 result.Message = $"❌ Veritabanı oluşturma işlemi başarısız: {ex.Message}";
@@ -321,7 +326,8 @@ namespace MuhasibPro.Data.Database.Extensions
                     .FirstOrDefaultAsync(ct)
                     .ConfigureAwait(false);
                 return count > 0;
-            } catch(Exception)
+            }
+            catch (Exception)
             {
                 // Loglama yapma sorumluluğu çağırana bırakılıyor; burada false dön
                 return false;
@@ -330,7 +336,7 @@ namespace MuhasibPro.Data.Database.Extensions
 
         private static async Task<bool> TableHasRowsSafeAsync(DbContext context, string tableName, CancellationToken ct)
         {
-            if(!IsValidTableName(tableName))
+            if (!IsValidTableName(tableName))
                 return false;
 
             try
@@ -338,7 +344,8 @@ namespace MuhasibPro.Data.Database.Extensions
                 var sql = $"SELECT COUNT(*) FROM \"{tableName}\" LIMIT 1";
                 var count = await context.Database.SqlQueryRaw<int>(sql).FirstOrDefaultAsync(ct).ConfigureAwait(false);
                 return count > 0;
-            } catch
+            }
+            catch
             {
                 return false;
             }
@@ -346,7 +353,7 @@ namespace MuhasibPro.Data.Database.Extensions
 
         private static bool IsValidTableName(string tableName)
         {
-            if(string.IsNullOrWhiteSpace(tableName))
+            if (string.IsNullOrWhiteSpace(tableName))
                 return false;
             return tableName.All(c => char.IsLetterOrDigit(c) || c == '_') && char.IsLetter(tableName[0]);
         }
@@ -354,13 +361,13 @@ namespace MuhasibPro.Data.Database.Extensions
         private static string GetVersionFromMigrations(IEnumerable<string> migrations)
         {
             var migrationList = migrations.ToList();
-            if(!migrationList.Any())
+            if (!migrationList.Any())
                 return "1.0.0.0";
 
             var lastMigration = migrationList.Last();
 
             // 20240115143000_Initial gibi bir format varsa
-            if(lastMigration.Length >= 14 && long.TryParse(lastMigration.AsSpan(0, 14), out _))
+            if (lastMigration.Length >= 14 && long.TryParse(lastMigration.AsSpan(0, 14), out _))
             {
                 var ts = lastMigration.AsSpan(0, 14);
                 // Format: 2024.01.15.1430 (Yıl.Ay.Gün.SaatDakika)

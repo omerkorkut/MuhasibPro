@@ -7,13 +7,13 @@ namespace MuhasibPro.Domain.Entities.SistemEntity;
 [Table("MaliDonemler")]
 public class MaliDonem : BaseEntity
 {
-    [Required]    
+    [Required]
     public long FirmaId { get; set; }
 
     [Required]
     public int MaliYil { get; set; }
 
-   
+
     [Required]
     public string DBName { get; set; }
 
@@ -23,7 +23,7 @@ public class MaliDonem : BaseEntity
     [StringLength(1000)]
     public string DBPath { get; set; }
     public DatabaseType DatabaseType { get; set; }
-   
+
     public Firma Firma { get; set; }
     public string BuildSearchTerms() => $"{Id} {FirmaId} {MaliYil}".ToLower();
 }

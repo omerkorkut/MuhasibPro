@@ -17,23 +17,25 @@ namespace MuhasibPro.Data.Database.Common
 
         public void CleanupSqliteWalFiles(string dbFilePath)
         {
-            if(string.IsNullOrEmpty(dbFilePath))
+            if (string.IsNullOrEmpty(dbFilePath))
                 return;
 
             try
             {
                 var files = new[] { dbFilePath + "-wal", dbFilePath + "-shm" };
-                foreach(var file in files)
+                foreach (var file in files)
                 {
                     try
                     {
-                        if(File.Exists(file))
+                        if (File.Exists(file))
                             File.Delete(file);
-                    } catch(IOException)
+                    }
+                    catch (IOException)
                     { /* Dosya kullanımda */
                     }
                 }
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger?.LogDebug(ex, "WAL cleanup failed: {File}", Path.GetFileName(dbFilePath));
             }
@@ -44,7 +46,7 @@ namespace MuhasibPro.Data.Database.Common
             string databaseName,
             CancellationToken cancellationToken)
         {
-            if(!File.Exists(dbFilePath))
+            if (!File.Exists(dbFilePath))
                 return;
 
             try
@@ -57,7 +59,8 @@ namespace MuhasibPro.Data.Database.Common
                 await command.ExecuteScalarAsync(cancellationToken);
 
                 _logger?.LogDebug("WAL checkpoint tamamlandı: {Database}", databaseName);
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger?.LogDebug(ex, "WAL checkpoint başarısız: {Database}", databaseName);
             }
@@ -153,16 +156,16 @@ namespace MuhasibPro.Data.Database.Common
         public async Task SafeFileCopyAsync(string source, string dest, CancellationToken cancellationToken)
         {
             // === BAŞINA BU 5 SATIRI EKLEYİN ===
-            if(string.Equals(source, dest, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(source, dest, StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("Kaynak ve hedef aynı dosya olamaz", nameof(dest));
 
             var sourceDir = Path.GetDirectoryName(source);
             var destDir = Path.GetDirectoryName(dest);
 
-            if(!string.Equals(sourceDir, destDir, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(sourceDir, destDir, StringComparison.OrdinalIgnoreCase))
             {
                 var destDrive = Path.GetPathRoot(dest);
-                if(DriveInfo.GetDrives()
+                if (DriveInfo.GetDrives()
                     .Any(
                         d => string.Equals(
                                 d.Name.TrimEnd('\\'),
@@ -174,58 +177,61 @@ namespace MuhasibPro.Data.Database.Common
                 }
             }
 
-            if(!File.Exists(source))
+            if (!File.Exists(source))
                 throw new FileNotFoundException("Kaynak dosya bulunamadı", source);
-            
-                var tempDest = dest + ".tmp";
 
+            var tempDest = dest + ".tmp";
+
+            try
+            {
+                await TryReleaseFileLocksAsync(source, cancellationToken);
+
+                var buffer = ArrayPool<byte>.Shared.Rent(BUFFER_SIZE);
                 try
                 {
-                    await TryReleaseFileLocksAsync(source, cancellationToken);
+                    await using var sourceStream = new FileStream(
+                        source,
+                        FileMode.Open,
+                        FileAccess.Read,
+                        FileShare.ReadWrite,
+                        BUFFER_SIZE,
+                        FileOptions.SequentialScan | FileOptions.Asynchronous);
 
-                    var buffer = ArrayPool<byte>.Shared.Rent(BUFFER_SIZE);
-                    try
+                    await using var tempStream = new FileStream(
+                        tempDest,
+                        FileMode.CreateNew,
+                        FileAccess.Write,
+                        FileShare.None,
+                        BUFFER_SIZE,
+                        FileOptions.Asynchronous);
+
+                    int bytesRead;
+                    while ((bytesRead = await sourceStream.ReadAsync(buffer, cancellationToken)) > 0)
                     {
-                        await using var sourceStream = new FileStream(
-                            source,
-                            FileMode.Open,
-                            FileAccess.Read,
-                            FileShare.ReadWrite,
-                            BUFFER_SIZE,
-                            FileOptions.SequentialScan | FileOptions.Asynchronous);
-
-                        await using var tempStream = new FileStream(
-                            tempDest,
-                            FileMode.CreateNew,
-                            FileAccess.Write,
-                            FileShare.None,
-                            BUFFER_SIZE,
-                            FileOptions.Asynchronous);
-
-                        int bytesRead;
-                        while((bytesRead = await sourceStream.ReadAsync(buffer, cancellationToken)) > 0)
-                        {
-                            await tempStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
-                        }
-
-                        await tempStream.FlushAsync(cancellationToken);
-                    } finally
-                    {
-                        ArrayPool<byte>.Shared.Return(buffer);
+                        await tempStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
                     }
 
-                    File.Move(tempDest, dest, overwrite: true);
-                } finally
-                {
-                    try
-                    {
-                        if(File.Exists(tempDest))
-                            File.Delete(tempDest);
-                    } catch
-                    {
-                    }
+                    await tempStream.FlushAsync(cancellationToken);
                 }
-            
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+
+                File.Move(tempDest, dest, overwrite: true);
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(tempDest))
+                        File.Delete(tempDest);
+                }
+                catch
+                {
+                }
+            }
+
         }
 
         private async Task TryReleaseFileLocksAsync(string filePath, CancellationToken cancellationToken)
@@ -245,11 +251,13 @@ namespace MuhasibPro.Data.Database.Common
                         FileShare.ReadWrite,
                         1,
                         FileOptions.Asynchronous);
-                } catch(IOException)
+                }
+                catch (IOException)
                 {
                     await Task.Delay(LOCK_RETRY_DELAY * 2, cancellationToken);
                 }
-            } catch
+            }
+            catch
             {
                 SqliteConnection.ClearAllPools();
                 await Task.Delay(100, cancellationToken);
@@ -259,18 +267,18 @@ namespace MuhasibPro.Data.Database.Common
 
         public DatabaseBackupType DetermineBackupType(string fileName)
         {
-            if(string.IsNullOrEmpty(fileName))
+            if (string.IsNullOrEmpty(fileName))
                 return DatabaseBackupType.Manual;
 
             var name = Path.GetFileNameWithoutExtension(fileName).ToLowerInvariant();
 
-            if(name.Contains("safety") || name.Contains("security") || name.Contains("before_restore"))
+            if (name.Contains("safety") || name.Contains("security") || name.Contains("before_restore"))
                 return DatabaseBackupType.Safety;
-            if(name.Contains("auto") || name.Contains("scheduled") || name.Contains("cron"))
+            if (name.Contains("auto") || name.Contains("scheduled") || name.Contains("cron"))
                 return DatabaseBackupType.Automatic;
-            if(name.Contains("migration") || name.Contains("mig") || name.Contains("upgrade"))
+            if (name.Contains("migration") || name.Contains("mig") || name.Contains("upgrade"))
                 return DatabaseBackupType.Migration;
-            if(name.Contains("system") || name.Contains("sys") || name.Contains("internal"))
+            if (name.Contains("system") || name.Contains("sys") || name.Contains("internal"))
                 return DatabaseBackupType.System;
 
             return DatabaseBackupType.Manual;
@@ -282,7 +290,7 @@ namespace MuhasibPro.Data.Database.Common
             int keepLast = 10,
             CancellationToken cancellationToken = default)
         {
-            if(!Directory.Exists(backupDir))
+            if (!Directory.Exists(backupDir))
                 return 0;
 
             try
@@ -300,7 +308,8 @@ namespace MuhasibPro.Data.Database.Common
                         {
                             await Task.Run(() => file.Delete(), cancellationToken);
                             return 1;
-                        } catch
+                        }
+                        catch
                         {
                             return 0;
                         }
@@ -308,7 +317,8 @@ namespace MuhasibPro.Data.Database.Common
 
                 var results = await Task.WhenAll(deleteTasks);
                 return results.Sum();
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger?.LogError(ex, "Backup temizleme başarısız: {Database}", databaseName);
                 return 0;
@@ -323,7 +333,8 @@ namespace MuhasibPro.Data.Database.Common
                 return File.Exists(path) &&
                     new FileInfo(path).Length > 1024 &&
                     Path.GetExtension(path).Equals(".backup", StringComparison.OrdinalIgnoreCase);
-            } catch
+            }
+            catch
             {
                 return false;
             }
@@ -334,7 +345,7 @@ namespace MuhasibPro.Data.Database.Common
             var lockFile = $"{filePath}.lock";
             var start = DateTime.UtcNow;
 
-            while(DateTime.UtcNow - start < timeout)
+            while (DateTime.UtcNow - start < timeout)
             {
                 try
                 {
@@ -347,7 +358,8 @@ namespace MuhasibPro.Data.Database.Common
                         FileOptions.DeleteOnClose);
 
                     return stream; // Dispose olunca lock kalkar
-                } catch(IOException)
+                }
+                catch (IOException)
                 {
                     await Task.Delay(100, ct);
                 }

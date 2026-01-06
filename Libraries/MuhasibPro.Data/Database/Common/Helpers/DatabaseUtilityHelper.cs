@@ -19,17 +19,52 @@
 
             return fileName + ".backup";
         }
+
         public static string ExtractVersionFromMigration(string migrationName)
         {
-            // Örnek: "20240115143000_InitialCreate" → "2024.01.15.1430"
-            if (migrationName.Length >= 14 && migrationName.Take(14).All(char.IsDigit))
+            try
             {
-                var ts = migrationName.AsSpan(0, 14);
-                return $"{ts.Slice(0, 4)}.{ts.Slice(4, 2)}.{ts.Slice(6, 2)}.{ts.Slice(8, 4)}";
-            }
+                if (string.IsNullOrEmpty(migrationName))
+                    return "1.0.0"; // İlk versiyon
 
-            // Migration sayısına göre
-            return $"1.0.0.{migrationName.GetHashCode() % 10000}";
+                // Migration formatı: 20240115143000_InitialCreate
+                var parts = migrationName.Split('_', StringSplitOptions.RemoveEmptyEntries);
+
+                if (parts.Length == 0)
+                    return "1.0.0";
+
+                // İlk kısmı timestamp olarak kontrol et
+                var timestampPart = parts[0];
+
+                // Timestamp formatı: YYYYMMDDHHMMSS (14 karakter)
+                if (timestampPart.Length == 14 && long.TryParse(timestampPart, out _))
+                {
+                    return timestampPart; // "20240115143000"
+                }
+
+                // Timestamp değilse, migration adının hash'ini al
+                var hash = CalculateSimpleHash(migrationName);
+                return $"1.0.0.{hash}";
+            }
+            catch
+            {
+                // Herhangi bir hatada default versiyon
+                return "1.0.0";
+            }
+        }
+
+        private static string CalculateSimpleHash(string input)
+        {
+            // Basit bir hash (CRC32 veya basit checksum)
+            unchecked
+            {
+                int hash = 17;
+                foreach (char c in input)
+                {
+                    hash = hash * 31 + c;
+                }
+                return Math.Abs(hash).ToString("X8").Substring(0, 6);
+            }
         }
     }
 }

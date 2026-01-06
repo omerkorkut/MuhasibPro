@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Muhasib.Domain.Exceptions;
+namespace MuhasibPro.Domain.Exceptions;
 
 public class UserNotFoundException : Exception
 {

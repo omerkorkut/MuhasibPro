@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.Storage;
-using MuhasibPro.Data.Contracts.Repository.Common;
+using MuhasibPro.Data.Contracts.Repository.Common.BaseRepo;
 
-namespace MuhasibPro.Data.Repository.Common
+namespace MuhasibPro.Data.Repository.Common.BaseRepo
 {
     public class EfTransaction : ITransaction
     {

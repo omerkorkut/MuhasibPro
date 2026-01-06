@@ -1,10 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
-using MuhasibPro.Data.Concrete.Database.SistemDatabase;
 using MuhasibPro.Data.Contracts.Database.Common;
 using MuhasibPro.Data.Contracts.Database.Common.Helpers;
+using MuhasibPro.Data.Contracts.Database.SistemDatabase;
 using MuhasibPro.Data.Database.Common.Helpers;
 using MuhasibPro.Domain.Enum.DatabaseEnum;
-using MuhasibPro.Domain.Models.DatabaseResult;
 using MuhasibPro.Domain.Models.DatabaseResultModel;
 
 namespace MuhasibPro.Data.Database.SistemDatabase
@@ -63,15 +62,16 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                     await _backupManager.ExecuteWalCheckpointAsync(sourceFilePath, _databaseName, cancellationToken);
                     // 2. WAL dosyalarını temizle
                     _backupManager.CleanupSqliteWalFiles(sourceFilePath);
-                } catch(Exception ex)
+                }
+                catch (Exception ex)
                 {
                     _logger?.LogError(ex, "Backup oluşturulamadı: {DatabaseName}", _databaseName);
                     result.Message = "🔴 Veritabanı hazırlık aşamasında (WAL) hata oluştu.";
-                    
+
                     result.IsBackupComleted = false;
                     return result;
                 }
-                
+
                 result.BackupDirectory = backupDir;
                 result.BackupFileName = backupFileName;
                 result.BackupPath = backupPath;
@@ -119,9 +119,10 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 "Veritabanı yedeklendi: {DatabaseName} -> {BackupPath}",
                 _databaseName,
                 result.BackupFileName);
-                
+
                 return result;
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger?.LogError(ex, "Veritabanı yedeklenemedi: {DatabaseName}", _databaseName);
                 return result;
@@ -136,7 +137,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             // 2. ✅ SADECE geçerli (IsValid = true) backup'ları düşün
             var validBackups = backups.Where(b => b.IsBackupComleted).ToList();
 
-            if(!validBackups.Any())
+            if (!validBackups.Any())
                 return false;
 
             // 3. En yeni GEÇERLİ backup'ı bul
@@ -144,7 +145,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 .OrderByDescending(b => b.LastBackupDate)
                 .FirstOrDefault();
 
-            if(latestBackup == null)
+            if (latestBackup == null)
                 return false;
 
             // 4. O backup'ı geri yükle
@@ -156,14 +157,14 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             try
             {
                 var backupDir = _applicationPaths.GetBackupFolderPath();
-                if(!Directory.Exists(backupDir))
+                if (!Directory.Exists(backupDir))
                     return Task.FromResult(new List<DatabaseBackupResult>());
 
                 var searchPattern = string.Format(BACKUP_FILE_PATTERN, _databaseName);
 
                 var backupList = new List<DatabaseBackupResult>();
 
-                foreach(var filePath in Directory.GetFiles(backupDir, searchPattern))
+                foreach (var filePath in Directory.GetFiles(backupDir, searchPattern))
                 {
                     try
                     {
@@ -196,7 +197,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 }
 
                 return Task.FromResult(backupList.OrderByDescending(b => b.LastBackupDate).ToList());
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger?.LogDebug(ex, "Backup listesi alınamadı: {DatabaseName}", _databaseName);
                 return Task.FromResult(new List<DatabaseBackupResult>());
@@ -208,7 +210,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             try
             {
                 var backupDir = _applicationPaths.GetBackupFolderPath();
-                if(!Directory.Exists(backupDir))
+                if (!Directory.Exists(backupDir))
                     return null;
 
                 var searchPattern = string.Format(BACKUP_FILE_PATTERN, _databaseName);
@@ -218,7 +220,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                     .FirstOrDefault();
 
                 return lastBackup?.CreationTimeUtc;
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger?.LogDebug(ex, "Son backup tarihi alınamadı: {DatabaseName}", _databaseName);
                 return null;
@@ -231,7 +234,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             {
                 var restoreResult = await RestoreBackupDetailsAsync(backupFileName, cancellationToken);
                 return restoreResult.IsRestoreSuccess;
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger?.LogDebug(ex, "Son geri yükleme işlemi başarısız: {DatabaseName}", _databaseName);
                 return false;
@@ -260,7 +264,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 var targetPath = _applicationPaths.GetSistemDatabaseFilePath();
 
                 // 1. VALIDATION
-                if(!_backupManager.IsValidBackupFile(backupDir, backupFileName))
+                if (!_backupManager.IsValidBackupFile(backupDir, backupFileName))
                 {
                     result.HasError = true;
                     result.Message = "Seçilen yedek dosyası geçersiz veya bozuk.";
@@ -274,7 +278,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 cancellationToken.ThrowIfCancellationRequested();
 
                 // 3. CREATE SAFETY BACKUP (ROLLBACK için)
-                if(File.Exists(targetPath))
+                if (File.Exists(targetPath))
                 {
                     var safetyBackupName = string.Format(
                         TEMP_BACKUP_PATTERN,
@@ -339,7 +343,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 _backupManager.CleanupSqliteWalFiles(targetPath);
 
                 // 6. FINAL VALIDATION
-                if(!_applicationPaths.IsSqliteDatabaseFileValid(targetPath))
+                if (!_applicationPaths.IsSqliteDatabaseFileValid(targetPath))
                 {
                     // ROLLBACK safety backup'a
                     await RollbackToSafetyBackupAsync(targetPath, safetyBackupPath, cancellationToken);
@@ -409,7 +413,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             string safetyBackupPath,
             CancellationToken ct)
         {
-            if(safetyBackupPath == null || !File.Exists(safetyBackupPath))
+            if (safetyBackupPath == null || !File.Exists(safetyBackupPath))
                 return false;
 
             try
@@ -419,7 +423,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
                 await Task.Delay(BACKUP_DELAY_MS, ct).ConfigureAwait(false);
 
-                if(File.Exists(targetPath))
+                if (File.Exists(targetPath))
                     File.Delete(targetPath);
 
                 await _backupManager.SafeFileCopyAsync(safetyBackupPath, targetPath, ct);
@@ -431,12 +435,14 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 try
                 {
                     File.Delete(safetyBackupPath);
-                } catch
+                }
+                catch
                 {
                 }
 
                 return true;
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger?.LogError(ex, "Safety backup'a geri dönülemedi!");
                 return false;
@@ -449,7 +455,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             {
                 var backupDir = _applicationPaths.GetBackupFolderPath();
                 return await _backupManager.CleanOldBackupsAsync(backupDir, _databaseName, keepLast, cancellationToken);
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger?.LogError(ex, "Eski backup'lar temizlenemedi: {DatabaseName}", _databaseName);
                 return 0;

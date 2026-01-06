@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MuhasibPro.Data", "Librarie
 		{A0B5CCDD-279B-DBEF-5AAB-A1540A772C23} = {A0B5CCDD-279B-DBEF-5AAB-A1540A772C23}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MuhasibPro.Business", "Libraries\MuhasibPro.Business\MuhasibPro.Business.csproj", "{C6FE64CC-4F29-415C-B0F8-5D7F34796DEF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +28,10 @@ Global
 		{ECF4D4DB-63A6-4E90-A00B-331F77376F78}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ECF4D4DB-63A6-4E90-A00B-331F77376F78}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ECF4D4DB-63A6-4E90-A00B-331F77376F78}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6FE64CC-4F29-415C-B0F8-5D7F34796DEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6FE64CC-4F29-415C-B0F8-5D7F34796DEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6FE64CC-4F29-415C-B0F8-5D7F34796DEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6FE64CC-4F29-415C-B0F8-5D7F34796DEF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -33,6 +39,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{A0B5CCDD-279B-DBEF-5AAB-A1540A772C23} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{ECF4D4DB-63A6-4E90-A00B-331F77376F78} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{C6FE64CC-4F29-415C-B0F8-5D7F34796DEF} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F4E2FB6F-239E-4588-9E24-0A8A15EC7F12}

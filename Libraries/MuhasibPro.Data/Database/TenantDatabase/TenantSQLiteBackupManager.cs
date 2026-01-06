@@ -1,11 +1,9 @@
-﻿using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using MuhasibPro.Data.Contracts.Database.Common;
 using MuhasibPro.Data.Contracts.Database.Common.Helpers;
 using MuhasibPro.Data.Contracts.Database.TenantDatabase;
 using MuhasibPro.Data.Database.Common.Helpers;
 using MuhasibPro.Domain.Enum.DatabaseEnum;
-using MuhasibPro.Domain.Models.DatabaseResult;
 using MuhasibPro.Domain.Models.DatabaseResultModel;
 
 namespace MuhasibPro.Data.Database.TenantDatabase
@@ -42,10 +40,11 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             try
             {
                 var backupDir = GetTenantBackupFolderPath;
-                if(backupDir == null)
+                if (backupDir == null)
                     return 0;
                 return await _backupManager.CleanOldBackupsAsync(backupDir, databaseName, keepLast, cancellationToken);
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger?.LogError(ex, "Eski backup'lar temizlenemedi: {DatabaseName}", databaseName);
                 return 0;
@@ -68,7 +67,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             {
                 var sourcePath = GetTenantFilePath(databaseName);
                 result.BackupFilePath = sourcePath;
-                if(!File.Exists(sourcePath))
+                if (!File.Exists(sourcePath))
                 {
                     _logger?.LogWarning("Yedekleme için kaynak dosya bulunamadı: {DatabaseName}", databaseName);
                     result.Message = "🗃️ Yedek alınacak kaynak veritabanı bulunamadı!";
@@ -81,7 +80,8 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 {
                     await _backupManager.ExecuteWalCheckpointAsync(sourcePath, databaseName, cancellationToken);
                     _backupManager.CleanupSqliteWalFiles(sourcePath);
-                } catch(Exception ex)
+                }
+                catch (Exception ex)
                 {
                     _logger?.LogError(ex, "Backup oluşturulamadı: {DatabaseName}", databaseName);
                     result.Message = "🔴 Veritabanı hazırlık aşamasında (WAL) hata oluştu.";
@@ -97,21 +97,23 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                     await _backupManager.SafeFileCopyAsync(sourcePath, backupPath, cancellationToken);
                     result.Message = "➕ Yedekleme işlemi başlatıldı...";
                     // 5. DOĞRULAMA
-                    if(_backupManager.IsValidBackupFile(
+                    if (_backupManager.IsValidBackupFile(
                         Path.GetDirectoryName(backupPath),
                         Path.GetFileName(backupFileName)))
                     {
                         result.IsBackupComleted = true;
                         result.Message = "✅ Yedekleme işlemi başarıyla tamamlandı.";
-                    } else
+                    }
+                    else
                     {
-                        if(File.Exists(backupPath))
+                        if (File.Exists(backupPath))
                             File.Delete(backupPath);
 
                         result.Message = "❌ Yedek dosyası oluşturulurken disk hatası oluştu.";
                         return result;
                     }
-                } catch(OperationCanceledException ex)
+                }
+                catch (OperationCanceledException ex)
                 {
                     // 6. Hata
                     _logger.LogError(ex, "Yedekleme iptal edildi!");
@@ -123,7 +125,8 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 result.BackupFileName);
 
                 return result;
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger?.LogError(ex, "Veritabanı yedeklenemedi: {DatabaseName}", databaseName);
                 return result;
@@ -135,11 +138,11 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             try
             {
                 var backupDir = GetTenantBackupFolderPath;
-                if(!Directory.Exists(backupDir))
+                if (!Directory.Exists(backupDir))
                     return Task.FromResult(new List<DatabaseBackupResult>());
                 var searchPattern = string.Format(BACKUP_FILE_PATTERN, GetTenantFilePath(databaseName));
                 var backupList = new List<DatabaseBackupResult>();
-                foreach(var filePath in Directory.GetFiles(backupDir, searchPattern))
+                foreach (var filePath in Directory.GetFiles(backupDir, searchPattern))
                 {
                     try
                     {
@@ -158,13 +161,15 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                             IsBackupComleted = isValidBackup && isSqliteValid, // ✅ İkisi birden
                         };
                         backupList.Add(backup);
-                    } catch
+                    }
+                    catch
                     {
                         continue;
                     }
                 }
                 return Task.FromResult(backupList.OrderByDescending(b => b.LastBackupDate).ToList());
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger?.LogDebug(ex, "Backup listesi alınamadı: {DatabaseName}", databaseName);
                 return Task.FromResult(new List<DatabaseBackupResult>());
@@ -176,7 +181,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             try
             {
                 var backupDir = GetTenantBackupFolderPath;
-                if(!Directory.Exists(backupDir))
+                if (!Directory.Exists(backupDir))
                     return null;
 
                 var searchPattern = string.Format(BACKUP_FILE_PATTERN, databaseName);
@@ -186,7 +191,8 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                     .FirstOrDefault();
 
                 return lastBackup?.CreationTimeUtc;
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger?.LogDebug(ex, "Son backup tarihi alınamadı: {DatabaseName}", databaseName);
                 return null;
@@ -202,7 +208,8 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             {
                 var restoreResult = await RestoreBackupDetailsAsync(databaseName, backupFileName, cancellationToken);
                 return restoreResult.IsRestoreSuccess;
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger?.LogDebug(ex, "Son geri yükleme işlemi başarısız: {DatabaseName}", backupFileName);
                 return false;
@@ -376,7 +383,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             // 2. ✅ SADECE geçerli (IsValid = true) backup'ları düşün
             var validBackups = backups.Where(b => b.IsBackupComleted).ToList();
 
-            if(!validBackups.Any())
+            if (!validBackups.Any())
                 return false;
 
             // 3. En yeni GEÇERLİ backup'ı bul
@@ -384,7 +391,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 .OrderByDescending(b => b.LastBackupDate)
                 .FirstOrDefault();
 
-            if(latestBackup == null)
+            if (latestBackup == null)
                 return false;
 
             // 4. O backup'ı geri yükle

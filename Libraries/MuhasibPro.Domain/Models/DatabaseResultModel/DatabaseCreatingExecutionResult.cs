@@ -4,7 +4,7 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
 {
     public class DatabaseCreatingExecutionResult : BaseDatabaseResult
     {
-        public bool IsCreatedSuccess { get; set; }        
+        public bool IsCreatedSuccess { get; set; }
         public override string OperationDisplayName => "Veritabanı Oluşturma";
 
         public override DatabaseStatusResult GetStatus()
@@ -21,7 +21,7 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
             if (HasError) return $"Veritabanı oluşturulurken hata: {Message}";
 
             return IsCreatedSuccess
-                ? $"{DatabaseName} veritabanı dosyası başarıyla oluşturuldu ve yapılandırıldı."
+                ? $"{DatabaseName} veritabanı başarıyla oluşturuldu ve yapılandırıldı."
                 : "Veritabanı oluşturma işlemi tamamlanamadı.";
         }
     }

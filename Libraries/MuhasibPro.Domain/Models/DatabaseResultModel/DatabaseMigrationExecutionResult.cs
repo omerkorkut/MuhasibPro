@@ -4,7 +4,7 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
 {
     public class DatabaseMigrationExecutionResult : BaseDatabaseResult
     {
-        public int AppliedMigrationsCount { get; set; }        
+        public int AppliedMigrationsCount { get; set; }
         public List<string> PendingMigrations { get; set; } = new();
         public bool DatabaseValid { get; set; }
         public override bool IsUpdateRequired => PendingMigrations.Any();

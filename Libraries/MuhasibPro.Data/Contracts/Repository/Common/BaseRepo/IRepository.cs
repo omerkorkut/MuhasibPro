@@ -2,7 +2,7 @@
 using MuhasibPro.Domain.Entities;
 using System.Linq.Expressions;
 
-namespace MuhasibPro.Data.Contracts.Repository.Common
+namespace MuhasibPro.Data.Contracts.Repository.Common.BaseRepo
 {
     /// <summary>
     /// Tüm repository'lerin implement edeceği base interface

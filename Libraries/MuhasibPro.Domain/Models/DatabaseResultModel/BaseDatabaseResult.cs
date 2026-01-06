@@ -5,7 +5,7 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
     public abstract class BaseDatabaseResult
     {
         // Temel Veriler
-        public string DatabaseName { get; set; }               
+        public string DatabaseName { get; set; }
         public bool HasError { get; set; }
         public string Message { get; set; } // Hata detayları için
         public bool CanConnect { get; set; }
@@ -22,6 +22,6 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
 
         // Senin istediğin etiketli merkezi mesaj
         public string GetTaggedMessage() => $"[{OperationDisplayName}] {GetStatusMessage()}";
-  
+
     }
 }

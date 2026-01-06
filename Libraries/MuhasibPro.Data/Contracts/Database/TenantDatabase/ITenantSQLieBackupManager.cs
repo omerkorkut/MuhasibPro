@@ -1,5 +1,4 @@
 ﻿using MuhasibPro.Domain.Enum.DatabaseEnum;
-using MuhasibPro.Domain.Models.DatabaseResult;
 using MuhasibPro.Domain.Models.DatabaseResultModel;
 
 namespace MuhasibPro.Data.Contracts.Database.TenantDatabase
@@ -18,7 +17,7 @@ namespace MuhasibPro.Data.Contracts.Database.TenantDatabase
         /// </summary>
         Task<List<DatabaseBackupResult>> GetBackupsAsync(string databaseName);
         DateTime? GetLastBackupDate(string databaseName);
-        Task<int> CleanOldBackupsAsync(string databaseName, int keepLast = 10, CancellationToken cancellationToken=default);
+        Task<int> CleanOldBackupsAsync(string databaseName, int keepLast = 10, CancellationToken cancellationToken = default);
         Task<DatabaseRestoreExecutionResult> RestoreBackupDetailsAsync(string databaseName, string backupFileName, CancellationToken cancellationToken);
         Task<bool> RestoreFromLatestBackupAsync(string databaseName, CancellationToken cancellationToken);
     }

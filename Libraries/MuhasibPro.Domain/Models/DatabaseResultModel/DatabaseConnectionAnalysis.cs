@@ -8,6 +8,7 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
         public bool IsDatabaseExists { get; set; }
         public bool DatabaseValid { get; set; }
         public string CurrentVersion { get; set; }
+
         public List<string> PendingMigrations { get; set; } = new();
         public int AppliedMigrationsCount { get; set; }
         public override bool IsUpdateRequired => PendingMigrations.Any();
@@ -45,7 +46,7 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
                 DatabaseStatusResult.InvalidSchema => "Veritabanı yapısı bozulmuş veya eksik tablolar var.",
                 DatabaseStatusResult.RequiredUpdating => IsEmptyDatabase
                     ? "Veritabanı boş, ilk kurulum yapılması gerekiyor."
-                    : $"Veritabanı güncel değil. {PendingMigrations.Count} adet güncelleme uygulanmalı.",                
+                    : $"Veritabanı güncel değil. {PendingMigrations.Count} adet güncelleme uygulanmalı.",
                 DatabaseStatusResult.RestoreCompleted => $"{DatabaseName} - Veritabanı yedekten başarıyla geri alındı",
                 DatabaseStatusResult.Success => "Veritabanı sağlıklı ve tüm güncellemeler yapılmış.",
                 _ => $"Analiz sırasında bir sorun tespit edildi: {Message}"

@@ -1,4 +1,4 @@
-﻿namespace Muhasib.Domain.Exceptions;
+﻿namespace MuhasibPro.Domain.Exceptions;
 
 public class InvalidPasswordException : Exception
 {

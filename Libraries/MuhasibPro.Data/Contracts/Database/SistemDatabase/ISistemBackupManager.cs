@@ -1,8 +1,7 @@
 ﻿using MuhasibPro.Domain.Enum.DatabaseEnum;
-using MuhasibPro.Domain.Models.DatabaseResult;
 using MuhasibPro.Domain.Models.DatabaseResultModel;
 
-namespace MuhasibPro.Data.Concrete.Database.SistemDatabase
+namespace MuhasibPro.Data.Contracts.Database.SistemDatabase
 {
     public interface ISistemBackupManager
     {

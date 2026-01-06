@@ -1,4 +1,4 @@
-﻿namespace Muhasib.Domain.Models
+﻿namespace MuhasibPro.Domain.Models
 {
     public enum RegistrationResult
     {

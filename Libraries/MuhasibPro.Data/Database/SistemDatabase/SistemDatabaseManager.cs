@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using MuhasibPro.Data.Concrete.Database.SistemDatabase;
 using MuhasibPro.Data.Contracts.Database.Common.Helpers;
+using MuhasibPro.Data.Contracts.Database.SistemDatabase;
 using MuhasibPro.Data.Database.Common.Helpers;
 using MuhasibPro.Data.Database.Extensions;
 using MuhasibPro.Domain.Models.DatabaseResultModel;
@@ -8,11 +8,9 @@ using MuhasibPro.Domain.Models.DatabaseResultModel;
 namespace MuhasibPro.Data.Database.SistemDatabase
 {
     public class SistemDatabaseManager : ISistemDatabaseManager
-    {        
+    {
         private readonly ILogger<SistemDatabaseManager> _logger;
         private readonly ISistemMigrationManager _migrationManager;
-        private readonly ISistemBackupManager _backupManager;
-        private readonly IApplicationPaths _applicationPaths;
         private const string _databaseName = DatabaseConstants.SISTEM_DB_NAME;
         public SistemDatabaseManager(
             ILogger<SistemDatabaseManager> logger,
@@ -23,20 +21,17 @@ namespace MuhasibPro.Data.Database.SistemDatabase
         {
             _logger = logger;
             _migrationManager = migrationManager;
-            _backupManager = backupManager;
-            _applicationPaths = applicationPaths;
-           
-        }      
+        }
         public async Task<bool> InitializeSistemDatabaseAsync(CancellationToken cancellationToken = default)
         {
             try
             {
-                var intializeDatabase = await _migrationManager.InitializeSistemDatabaseAsync(cancellationToken).ConfigureAwait(false);               
-                return intializeDatabase;
+                var initializeDatabase = await _migrationManager.InitializeSistemDatabaseAsync(cancellationToken).ConfigureAwait(false);
+                return initializeDatabase;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to create database: {DatabaseName}", _databaseName);
+                _logger.LogError(ex, "Veritabanı hazırlanamadı: {DatabaseName}", _databaseName);
                 return false;
             }
         }
@@ -44,9 +39,9 @@ namespace MuhasibPro.Data.Database.SistemDatabase
         {
             var analysis = new DatabaseConnectionAnalysis();
             try
-            {              
+            {
                 var databaseHealty = await _migrationManager.GetSistemDatabaseStateAsync(cancellationToken).ConfigureAwait(false);
-                if(databaseHealty == null)
+                if (databaseHealty == null)
                 {
                     databaseHealty.HasError = true;
                     databaseHealty.Message = "[Hata] ❌ Veritabanı durum analizi yapılamadı.";
@@ -56,7 +51,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Veritabanı analiz hatası: {DatabaseName}", _databaseName);                
+                _logger.LogError(ex, "Veritabanı analiz hatası: {DatabaseName}", _databaseName);
                 analysis.HasError = true;
                 analysis.Message = "[Hata] ❌ Veritabanı durum analizi yapılamadı.";
                 return analysis;
@@ -72,8 +67,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
 
             return result.ToLegacyResult();
         }
-   
-   
+
+
     }
 
 

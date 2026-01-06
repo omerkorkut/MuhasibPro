@@ -1,12 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Logging;
-using MuhasibPro.Data.Concrete.Database.SistemDatabase;
 using MuhasibPro.Data.Contracts.Database.Common.Helpers;
+using MuhasibPro.Data.Contracts.Database.SistemDatabase;
 using MuhasibPro.Data.Database.Common.Helpers;
 using MuhasibPro.Data.Database.Extensions;
 using MuhasibPro.Data.DataContext;
-using MuhasibPro.Domain.Entities.MuhasebeEntity.DegerlerEntities;
 using MuhasibPro.Domain.Entities.SistemEntity;
 using MuhasibPro.Domain.Enum.DatabaseEnum;
 using MuhasibPro.Domain.Models.DatabaseResultModel;
@@ -45,18 +43,18 @@ namespace MuhasibPro.Data.Database.SistemDatabase
         {
             try
             {
-                if(!_isSistemDatabaseFileExist)
+                if (!_isSistemDatabaseFileExist)
                 {
                     // ⭐ DATABASE YOK: YENİ OLUŞTUR
                     _logger.LogInformation("Database dosyası bulunamadı, yeni oluşturuluyor: {Database}", _databaseName);
 
-                var createResult = await _dbContext.ExecuteCreatingDatabaseAsync(
-                        databaseName: _databaseName,
-                        logger: _logger,
-                        commandTimeoutMinutes: 5,
-                    ct: cancellationToken).ConfigureAwait(false);
+                    var createResult = await _dbContext.ExecuteCreatingDatabaseAsync(
+                            databaseName: _databaseName,
+                            logger: _logger,
+                            commandTimeoutMinutes: 5,
+                        ct: cancellationToken).ConfigureAwait(false);
 
-                    if(createResult.IsCreatedSuccess)
+                    if (createResult.IsCreatedSuccess)
                     {
                         // İlk kurulumda version kaydı oluştur
                         await DatabaseVersionFromMigrationsAsync(_dbContext, cancellationToken);
@@ -65,7 +63,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
 
                     _logger.LogError("Database oluşturma başarısız: {Database}", _databaseName);
                     return false;
-                } else
+                }
+                else
                 {
                     // ⭐ DATABASE VAR: GÜNCELLE
                     _logger.LogInformation(
@@ -81,7 +80,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                         logger: _logger,
                         ct: cancellationToken).ConfigureAwait(false);
 
-                    if(!analysis.CanConnect)
+                    if (!analysis.CanConnect)
                     {
                         _logger.LogError("Database'e bağlanılamıyor: {Database}", _databaseName);
                         return false;
@@ -111,7 +110,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                         commandTimeoutMinutes: 5,
                         ct: cancellationToken).ConfigureAwait(false);
 
-                    if(migrationResult.IsHealthy)
+                    if (migrationResult.IsHealthy)
                     {
                         // ⭐ VERSİYONU GÜNCELLE (migration'dan SONRA)
                         await DatabaseVersionFromMigrationsAsync(_dbContext, cancellationToken).ConfigureAwait(false);
@@ -119,7 +118,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
 
                     return migrationResult.IsHealthy;
                 }
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Initialize database hatası: {_databaseName}", _databaseName);
                 return false;
@@ -194,13 +194,14 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                     .Where(v => v.DatabaseName == _databaseName)
                     .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 
-                if(versionRecord != null)
+                if (versionRecord != null)
                     return versionRecord.CurrentDatabaseVersion;
 
                 // Version kaydı yoksa state'ten al
                 var state = await GetSistemDatabaseStateAsync(cancellationToken).ConfigureAwait(false);
                 return state.CurrentVersion;
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Database versiyonu alınamadı: {Database}", _databaseName);
                 return "1.0.0.0";
@@ -210,7 +211,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
         private async Task DatabaseVersionFromMigrationsAsync(SistemDbContext context, CancellationToken cancellationToken)
         {
             try
-            {                
+            {
 
                 var appliedMigrations = await context.Database
                     .GetAppliedMigrationsAsync(cancellationToken)

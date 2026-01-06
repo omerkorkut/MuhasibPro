@@ -15,10 +15,10 @@ namespace MuhasibPro.Data.DataContext
         {
 
         }
-       
+
         public DbSet<TenantDatabaseVersiyon> TenantDatabaseVersiyonlar { get; set; }
 
         public DbSet<AppLog> AppLogs { get; set; }
-       
+
     }
 }

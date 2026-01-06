@@ -1,10 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MuhasibPro.Data.Contracts.Repository.Common;
+using MuhasibPro.Data.Contracts.Repository.Common.BaseRepo;
 using MuhasibPro.Domain.Common;
 using MuhasibPro.Domain.Entities;
 using System.Linq.Expressions;
 
-namespace MuhasibPro.Data.Repository.Common
+namespace MuhasibPro.Data.Repository.Common.BaseRepo
 {
     /// <summary>
     /// Tüm repository'lerin türeyeceği base class

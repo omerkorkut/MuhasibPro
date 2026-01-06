@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MuhasibPro.Data.DataContext.Configurations;
 using MuhasibPro.Domain.Entities.SistemEntity;
 
 namespace MuhasibPro.Data.DataContext
@@ -16,15 +17,7 @@ namespace MuhasibPro.Data.DataContext
             SeedUser(modelBuilder);
             SeedInitialVersion(modelBuilder);
 
-            modelBuilder.Entity<MaliDonem>(entity =>
-            {
-                entity.HasOne(m => m.Firma)
-                      .WithMany(f => f.MaliDonemler) //eğer Firma'da collection varsa
-                      .HasForeignKey(m => m.FirmaId)
-                      .OnDelete(DeleteBehavior.Restrict); // Veya Cascade, SetNull
-
-                // Diğer konfigürasyonlar...
-            });
+            modelBuilder.ApplyConfiguration(new MaliDonemConfiguration());
         }
         private void SeedUser(ModelBuilder modelBuilder)
         {
@@ -38,7 +31,7 @@ namespace MuhasibPro.Data.DataContext
                 KayitTarihi = new DateTime(2025, 03, 12),
                 RolId = 1,
                 KullaniciAdi = "korkutomer",
-                SifreHash = "AQAAAAIAAYagAAAAECnYdlrjFiWFJc+FGeGDmvR87uz20oU/Z0K4JE9ddoF2VUnmHw0idEFX8UPOb4cpzQ==",
+                ParolaHash = "AQAAAAIAAYagAAAAECnYdlrjFiWFJc+FGeGDmvR87uz20oU/Z0K4JE9ddoF2VUnmHw0idEFX8UPOb4cpzQ==",
                 Soyadi = "Korkut",
                 Telefon = "0 (541) 330 0800",
                 ArananTerim = "korkutomer, Ömer Korkut, Yönetici"
@@ -47,6 +40,7 @@ namespace MuhasibPro.Data.DataContext
             {
                 Id = 1,
                 RolAdi = "Yönetici",
+                RolTuru = KullaniciRolEnum.Admin,
                 Aciklama = "Sistemin tüm özelliklerine erişim yetkisi.",
                 KayitTarihi = yonetici.KayitTarihi,
                 KaydedenId = yonetici.KaydedenId,

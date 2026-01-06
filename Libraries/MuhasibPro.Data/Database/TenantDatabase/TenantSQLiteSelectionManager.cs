@@ -9,7 +9,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
     {
         private readonly ITenantSQLiteConnectionStringFactory _connectionStringFactory;
         private readonly ILogger<TenantSQLiteSelectionManager> _logger;
-        
+
         private readonly SemaphoreSlim _tenantSemaphore = new(1, 1);
         private readonly ConcurrentDictionary<string, ConnectionCacheEntry> _connectionCache = new();
 
@@ -24,7 +24,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         {
             _connectionStringFactory = connectionStringFactory;
             _logger = logger;
-            
+
         }
 
         #region Public Interface
@@ -161,7 +161,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         }
         #endregion
 
-      
+
 
         #region Disposal
         private void ThrowIfDisposed()

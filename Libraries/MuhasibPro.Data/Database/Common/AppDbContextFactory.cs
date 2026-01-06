@@ -60,12 +60,12 @@ namespace MuhasibPro.Data.Database.Common
         }
 
         public async Task<(bool canConnect, string message)> TestDbContextConnectionAsync(string databaseName, CancellationToken cancellationToken = default)
-        {            
+        {
             // 2. File check
             var dbPath = GetTenantDatabaseFilePath(databaseName);
             if (!File.Exists(dbPath))
-            {                
-                return (false,"Veritabanı dosyası bulunamadı");
+            {
+                return (false, "Veritabanı dosyası bulunamadı");
             }
             // 2. Dosya boyutu & Sqlite header durumunu kontrol et
             var dbValid = GetTenantDatabaseValid(databaseName);
@@ -88,7 +88,7 @@ namespace MuhasibPro.Data.Database.Common
                 {
                     _logger?.LogWarning("Veritabanı ile bağlantı kurulamadı: {DatabaseName}", databaseName);
                     return (false, "⛓️‍💥 Veritabanı bağlantısı kurululamadı");
-                }                
+                }
                 return (true, "🔗 Veritabanı bağlantısı başarılı");
             }
             catch (SqliteException ex) when (ex.SqliteErrorCode == 14)

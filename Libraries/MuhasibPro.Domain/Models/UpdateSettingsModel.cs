@@ -1,4 +1,4 @@
-﻿namespace Muhasib.Data.Managers.UpdataManager
+﻿namespace MuhasibPro.Domain.Models
 {
     public class UpdateSettingsModel
     {

@@ -1,31 +1,31 @@
 ﻿using MuhasibPro.Domain.Enum.DatabaseEnum;
 
-namespace MuhasibPro.Domain.Models.DatabaseResult
+namespace MuhasibPro.Domain.Models.DatabaseResultModel
 {
-    public class DatabaseBackupResult 
+    public class DatabaseBackupResult
     {
         public string DatabaseName { get; set; }
         public string BackupFilePath { get; set; }
-        public string BackupDirectory { get; set; }        
+        public string BackupDirectory { get; set; }
         public string BackupFileName { get; set; }
-        public string BackupPath { get; set; }        
-        public long BackupFileSizeBytes { get; set; }    
+        public string BackupPath { get; set; }
+        public long BackupFileSizeBytes { get; set; }
         public DatabaseBackupType BackupType { get; set; } // ⭐ ENUM!
         public bool IsBackupComleted { get; set; }
         public DateTime LastBackupDate { get; set; }
         public string Message { get; set; }
-  
-        public string BackupFileSizeDisplay => FormatFileSize(BackupFileSizeBytes);
-        public string BackupDisplayName  => GetBackupTypeDisplay(BackupType); // ⭐ Display property
 
-  
+        public string BackupFileSizeDisplay => FormatFileSize(BackupFileSizeBytes);
+        public string BackupDisplayName => GetBackupTypeDisplay(BackupType); // ⭐ Display property
+
+
 
         public string GetStatusMessage()
         {
             return IsBackupComleted
                 ? "✅ Yedekleme işlemi başarıyla tamamlandı."
                 : "🔴 Yedekleme başarısız: Lütfen veritabanın kullanılabilir olduğuna dikkat edin!";
-        }        
+        }
 
         private string GetBackupTypeDisplay(DatabaseBackupType type)
         {

@@ -18,7 +18,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         private const SqliteCacheMode DefaultCacheMode = SqliteCacheMode.Shared;
         private const int DefaultBusyTimeout = 5000;
         private const bool DefaultPooling = true;
-        
+
         public TenantSQLiteConnectionStringFactory(
             IApplicationPaths applicationPaths,
             ILogger<TenantSQLiteConnectionStringFactory> logger)
