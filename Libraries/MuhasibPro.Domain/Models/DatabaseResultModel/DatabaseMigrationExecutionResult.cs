@@ -17,7 +17,7 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
             if (!CanConnect) return DatabaseStatusResult.ConnectionFailed;
             if (!DatabaseValid) return DatabaseStatusResult.InvalidSchema;
 
-            return DatabaseStatusResult.Success;
+            return DatabaseStatusResult.Healty;
         }
 
         public override string GetStatusMessage()

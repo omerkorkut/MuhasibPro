@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MuhasibPro.Data", "Librarie
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MuhasibPro.Business", "Libraries\MuhasibPro.Business\MuhasibPro.Business.csproj", "{C6FE64CC-4F29-415C-B0F8-5D7F34796DEF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MuhasibPro", "MuhasibPro\MuhasibPro.csproj", "{FDE82184-EAC3-4322-8113-E82150543780}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,6 +34,12 @@ Global
 		{C6FE64CC-4F29-415C-B0F8-5D7F34796DEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C6FE64CC-4F29-415C-B0F8-5D7F34796DEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C6FE64CC-4F29-415C-B0F8-5D7F34796DEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FDE82184-EAC3-4322-8113-E82150543780}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{FDE82184-EAC3-4322-8113-E82150543780}.Debug|Any CPU.Build.0 = Debug|x64
+		{FDE82184-EAC3-4322-8113-E82150543780}.Debug|Any CPU.Deploy.0 = Debug|x64
+		{FDE82184-EAC3-4322-8113-E82150543780}.Release|Any CPU.ActiveCfg = Release|x64
+		{FDE82184-EAC3-4322-8113-E82150543780}.Release|Any CPU.Build.0 = Release|x64
+		{FDE82184-EAC3-4322-8113-E82150543780}.Release|Any CPU.Deploy.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

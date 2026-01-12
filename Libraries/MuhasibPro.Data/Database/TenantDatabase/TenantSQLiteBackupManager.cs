@@ -151,11 +151,12 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                         var isSqliteValid = _applicationPaths.IsSqliteDatabaseFileValid(filePath);
                         var backup = new DatabaseBackupResult
                         {
+                            BackupPath = filePath,
                             BackupDirectory = backupDir,
                             BackupFileName = fileInfo.Name,
                             BackupFilePath = fileInfo.FullName,
                             BackupFileSizeBytes = fileInfo.Length,
-                            LastBackupDate = fileInfo.CreationTimeUtc,
+                            LastBackupDate = fileInfo.LastAccessTimeUtc,
                             BackupType = _backupManager.DetermineBackupType(fileInfo.Name),
                             DatabaseName = databaseName,
                             IsBackupComleted = isValidBackup && isSqliteValid, // ✅ İkisi birden

@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using MuhasibPro.Business.EntityModel.SistemModel;
+using MuhasibPro.Business.DTOModel.SistemModel;
 
 namespace MuhasibPro.Business.ModelValidator.SistemValidations
 {

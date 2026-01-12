@@ -17,10 +17,10 @@ namespace MuhasibPro.Data.Database.Extensions
         {
             return status switch
             {
-                DatabaseStatusResult.Success => "✅",
+                DatabaseStatusResult.Healty => "🟢", // Yeşil daire
                 DatabaseStatusResult.RestoreCompleted => "📁✅",
                 DatabaseStatusResult.RequiredUpdating => "⚠️",
-                DatabaseStatusResult.DatabaseNotFound => "📁❌",
+                DatabaseStatusResult.DatabaseNotFound => "❌",
                 DatabaseStatusResult.ConnectionFailed => "🔴",
                 DatabaseStatusResult.InvalidSchema => "🧩",
                 DatabaseStatusResult.UnknownError => "❌",
@@ -33,7 +33,7 @@ namespace MuhasibPro.Data.Database.Extensions
         {
             return status switch
             {
-                DatabaseStatusResult.Success => "#28a745",          // Yeşil
+                DatabaseStatusResult.Healty => "#28a745",          // Yeşil
                 DatabaseStatusResult.RequiredUpdating => "#ffc107",   // Sarı
                 DatabaseStatusResult.DatabaseNotFound => "#fd7e14", // Turuncu
                 _ => "#dc3545"                                      // Kırmızı

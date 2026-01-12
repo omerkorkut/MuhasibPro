@@ -3,7 +3,7 @@ using MuhasibPro.Business.Contracts.SistemServices.Authentication;
 using MuhasibPro.Business.Contracts.SistemServices.LogServices;
 using MuhasibPro.Data.Contracts.Repository.Common;
 
-namespace MuhasibPro.Services.Infrastructure.LogServices
+namespace MuhasibPro.Business.Services.SistemServices.LogServices
 {
     public class LogService : ILogService
     {

@@ -287,7 +287,7 @@ namespace MuhasibPro.Data.Database.Common
         public async Task<int> CleanOldBackupsAsync(
             string backupDir,
             string databaseName,
-            int keepLast = 10,
+            int keepLast,
             CancellationToken cancellationToken = default)
         {
             if (!Directory.Exists(backupDir))

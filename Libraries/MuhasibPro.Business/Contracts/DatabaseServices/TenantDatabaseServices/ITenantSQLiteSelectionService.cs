@@ -5,10 +5,11 @@ namespace MuhasibPro.Business.Contracts.DatabaseServices.TenantDatabaseServices
 {
     public interface ITenantSQLiteSelectionService
     {
-        Task<ApiDataResponse<TenantContext>> SwitchTenantAsync(string databaseName);
-        Task<ApiDataResponse<bool>> DisconnectCurrentTenantAsync();
-        ApiDataResponse<TenantContext> GetCurrentTenant();
-        bool IsConnected { get; }
-        void ClearCurrentTenant();
+        Task<ApiDataResponse<TenantContext>> SwitchTenantAsync(string databaseName, CancellationToken cancellationToken);
+        Task<ApiDataResponse<bool>> DisconnectCurrentTenantAsync(CancellationToken cancellationToken);
+        TenantContext CurrentTenant { get; }
+        bool IsTenantLoaded { get; }
+        Task ClearCurrentTenantAsync(CancellationToken cancellationToken = default);
+        
     }
 }

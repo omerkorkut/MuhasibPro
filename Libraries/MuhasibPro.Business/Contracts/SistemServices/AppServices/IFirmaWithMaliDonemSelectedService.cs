@@ -1,4 +1,4 @@
-﻿using MuhasibPro.Business.EntityModel.SistemModel;
+﻿using MuhasibPro.Business.DTOModel.SistemModel;
 using MuhasibPro.Data.DataContext;
 
 namespace MuhasibPro.Business.Contracts.SistemServices.AppServices

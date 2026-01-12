@@ -13,12 +13,19 @@ namespace MuhasibPro.Data.DataContext
 
         #region Properties (All Immutable)
         public string DatabaseName { get; }
+
         public string ConnectionString { get; }
+
         public DatabaseType DatabaseType { get; }
+
         public bool IsLoaded => !string.IsNullOrWhiteSpace(DatabaseName) &&
-                               !string.IsNullOrWhiteSpace(ConnectionString);
+            !string.IsNullOrWhiteSpace(ConnectionString) &&
+            CanConnect;
+
         public bool CanConnect { get; }
+
         public string Message { get; }
+
         public DateTime LastConnectionTime { get; }
         #endregion
 
@@ -56,10 +63,10 @@ namespace MuhasibPro.Data.DataContext
             bool canConnect = true,
             string message = null)
         {
-            if (string.IsNullOrWhiteSpace(databaseName))
+            if(string.IsNullOrWhiteSpace(databaseName))
                 throw new ArgumentException("Database name required", nameof(databaseName));
 
-            if (string.IsNullOrWhiteSpace(connectionString))
+            if(string.IsNullOrWhiteSpace(connectionString))
                 throw new ArgumentException("Connection string required", nameof(connectionString));
 
             return new TenantContext(
@@ -70,16 +77,17 @@ namespace MuhasibPro.Data.DataContext
                 message: message ?? "Bağlandı",
                 lastConnectionTime: DateTime.UtcNow);
         }
+
         public static TenantContext TestConnection(
             string databaseName,
             string connectionString,
             bool canConnect = true,
             string message = null)
         {
-            if (string.IsNullOrWhiteSpace(databaseName))
+            if(string.IsNullOrWhiteSpace(databaseName))
                 throw new ArgumentException("Database name required", nameof(databaseName));
 
-            if (string.IsNullOrWhiteSpace(connectionString))
+            if(string.IsNullOrWhiteSpace(connectionString))
                 throw new ArgumentException("Connection string required", nameof(connectionString));
 
             return new TenantContext(
@@ -93,7 +101,7 @@ namespace MuhasibPro.Data.DataContext
 
         public TenantContext WithMessage(string newMessage)
         {
-            if (string.Equals(Message, newMessage, StringComparison.Ordinal))
+            if(string.Equals(Message, newMessage, StringComparison.Ordinal))
                 return this;
 
             return new TenantContext(
@@ -121,21 +129,19 @@ namespace MuhasibPro.Data.DataContext
         public override bool Equals(object obj)
         {
             return obj is TenantContext other &&
-                   string.Equals(DatabaseName, other.DatabaseName, StringComparison.OrdinalIgnoreCase) &&
-                   string.Equals(ConnectionString, other.ConnectionString, StringComparison.Ordinal);
+                string.Equals(DatabaseName, other.DatabaseName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(ConnectionString, other.ConnectionString, StringComparison.Ordinal);
         }
 
         public override int GetHashCode()
-        {
-            return HashCode.Combine(
-                DatabaseName?.ToUpperInvariant(),
-                ConnectionString);
-        }
+        { return HashCode.Combine(DatabaseName?.ToUpperInvariant(), ConnectionString); }
 
         public static bool operator ==(TenantContext left, TenantContext right)
         {
-            if (ReferenceEquals(left, right)) return true;
-            if (left is null || right is null) return false;
+            if(ReferenceEquals(left, right))
+                return true;
+            if(left is null || right is null)
+                return false;
             return left.Equals(right);
         }
 

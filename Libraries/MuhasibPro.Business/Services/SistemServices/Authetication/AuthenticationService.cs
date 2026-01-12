@@ -1,8 +1,8 @@
 ﻿using MuhasibPro.Business.Contracts.CommonServices;
 using MuhasibPro.Business.Contracts.SistemServices.Authentication;
 using MuhasibPro.Business.Contracts.UIServices;
-using MuhasibPro.Business.EntityModel;
-using MuhasibPro.Business.EntityModel.SistemModel;
+using MuhasibPro.Business.DTOModel;
+using MuhasibPro.Business.DTOModel.SistemModel;
 using MuhasibPro.Data.Contracts.Repository.SistemRepos.Authentication;
 using MuhasibPro.Domain.Entities.SistemEntity;
 using MuhasibPro.Domain.Models;
@@ -47,9 +47,9 @@ namespace MuhasibPro.Business.Services.SistemServices.Authetication
         public bool IsAuthenticated => CurrentAccount != null;
 
 
-        public string CurrentUsername => CurrentAccount?.KullaniciModel.KullaniciAdi ?? "App";
+        public string GetCurrentUsername => CurrentAccount?.KullaniciModel.KullaniciAdi ?? "App";
 
-        public long CurrentUserId => CurrentAccount?.Id ?? -1;
+        public long GetCurrentUserId => CurrentAccount?.Id ?? -1;
 
         public async Task Login(string username, string password)
         {
@@ -84,7 +84,7 @@ namespace MuhasibPro.Business.Services.SistemServices.Authetication
                 throw new ArgumentNullException(nameof(source));
             try
             {
-                var result = ModelFactory.ReadModel<HesapModel, Hesap>(
+                var result = ModelFactory.CreateModelFromEntity<HesapModel, Hesap>(
                     source,
                     includeAllFields,
                     (model, entity, include) =>
@@ -114,7 +114,7 @@ namespace MuhasibPro.Business.Services.SistemServices.Authetication
         {
             try
             {
-                var model = ModelFactory.ReadModel<KullaniciModel, Kullanici>(
+                var model = ModelFactory.CreateModelFromEntity<KullaniciModel, Kullanici>(
                     source,
                     includeAllFields,
                     (model, entity, includes) =>
@@ -152,7 +152,7 @@ namespace MuhasibPro.Business.Services.SistemServices.Authetication
         {
             try
             {
-                var model = ModelFactory.ReadModel<KullaniciRolModel, KullaniciRol>(
+                var model = ModelFactory.CreateModelFromEntity<KullaniciRolModel, KullaniciRol>(
                     source,
                     includesAllFields,
                     (model, entity, include) =>

@@ -25,31 +25,32 @@
             try
             {
                 if (string.IsNullOrEmpty(migrationName))
-                    return "1.0.0"; // İlk versiyon
+                    return "1.0.0.0"; // İlk versiyon
 
-                // Migration formatı: 20240115143000_InitialCreate
                 var parts = migrationName.Split('_', StringSplitOptions.RemoveEmptyEntries);
 
                 if (parts.Length == 0)
-                    return "1.0.0";
+                    return "1.0.0.0";
 
-                // İlk kısmı timestamp olarak kontrol et
                 var timestampPart = parts[0];
 
-                // Timestamp formatı: YYYYMMDDHHMMSS (14 karakter)
-                if (timestampPart.Length == 14 && long.TryParse(timestampPart, out _))
+                // Alternatif: Daha kısa format
+                if (timestampPart.Length == 14 && long.TryParse(timestampPart, out var timestamp))
                 {
-                    return timestampPart; // "20240115143000"
+                    // Sadece gün ve saat: 20240115143000 -> 1.1.15.1430
+                    var day = timestampPart.Substring(6, 2); // 15
+                    var hourMinute = timestampPart.Substring(8, 4); // 1430
+
+                    return $"1.1.{day}.{hourMinute}"; // Major.Minor.Day.HourMinute
                 }
 
-                // Timestamp değilse, migration adının hash'ini al
+                // Timestamp değilse
                 var hash = CalculateSimpleHash(migrationName);
                 return $"1.0.0.{hash}";
             }
             catch
             {
-                // Herhangi bir hatada default versiyon
-                return "1.0.0";
+                return "1.0.0.0";
             }
         }
 

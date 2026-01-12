@@ -22,7 +22,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             _logger = logger;
             _migrationManager = migrationManager;
         }
-        public async Task<bool> InitializeSistemDatabaseAsync(CancellationToken cancellationToken = default)
+        public async Task<(bool initializeState, string message)> InitializeSistemDatabaseAsync(CancellationToken cancellationToken = default)
         {
             try
             {
@@ -32,7 +32,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Veritabanı hazırlanamadı: {DatabaseName}", _databaseName);
-                return false;
+                return (false, "❌ Sistem veritabanı başlatma hatası");
             }
         }
         public async Task<DatabaseConnectionAnalysis> GetSistemDatabaseStateAsync(CancellationToken cancellationToken)
@@ -46,6 +46,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                     databaseHealty.HasError = true;
                     databaseHealty.Message = "[Hata] ❌ Veritabanı durum analizi yapılamadı.";
                 }
+                
                 analysis = databaseHealty;
                 return analysis;
             }
@@ -57,6 +58,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 return analysis;
             }
         }
+
         public async Task<(bool isValid, string Message)> ValidateSistemDatabaseAsync(CancellationToken cancellationToken)
         {
             var result = await GetSistemDatabaseStateAsync(cancellationToken);
@@ -68,7 +70,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             return result.ToLegacyResult();
         }
 
-
+     
     }
 
 

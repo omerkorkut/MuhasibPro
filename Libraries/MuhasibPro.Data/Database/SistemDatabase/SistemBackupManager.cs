@@ -144,12 +144,15 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             var latestBackup = validBackups
                 .OrderByDescending(b => b.LastBackupDate)
                 .FirstOrDefault();
-
+            
             if (latestBackup == null)
                 return false;
 
             // 4. O backup'ı geri yükle
-            return await RestoreBackupAsync(latestBackup.BackupFileName, cancellationToken);
+            var restoreBackup = await RestoreBackupDetailsAsync(latestBackup.BackupFileName, cancellationToken);
+            if (restoreBackup.IsRestoreSuccess)
+                return true;
+            return false;
         }
 
         public Task<List<DatabaseBackupResult>> GetBackupsAsync()
@@ -176,6 +179,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
 
                         var backup = new DatabaseBackupResult
                         {
+                            BackupPath = filePath,
+                            BackupDirectory = backupDir,
                             BackupFileName = fileInfo.Name,
                             BackupFilePath = fileInfo.FullName,
                             BackupFileSizeBytes = fileInfo.Length,
@@ -228,21 +233,24 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             }
         }
 
-        public async Task<bool> RestoreBackupAsync(string backupFileName, CancellationToken cancellationToken)
+        public async Task<DatabaseRestoreExecutionResult> RestoreBackupAsync(string backupFileName, CancellationToken cancellationToken)
         {
+            var restore = new DatabaseRestoreExecutionResult();
             try
             {
                 var restoreResult = await RestoreBackupDetailsAsync(backupFileName, cancellationToken);
-                return restoreResult.IsRestoreSuccess;
+                if(restoreResult.IsRestoreSuccess)
+                    return restoreResult;
+                return restore;
             }
             catch (Exception ex)
             {
                 _logger?.LogDebug(ex, "Son geri yükleme işlemi başarısız: {DatabaseName}", _databaseName);
-                return false;
+                return restore;
             }
         }
 
-        public async Task<DatabaseRestoreExecutionResult> RestoreBackupDetailsAsync(
+        private async Task<DatabaseRestoreExecutionResult> RestoreBackupDetailsAsync(
             string backupFileName,
             CancellationToken cancellationToken)
         {
@@ -267,7 +275,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 if (!_backupManager.IsValidBackupFile(backupDir, backupFileName))
                 {
                     result.HasError = true;
-                    result.Message = "Seçilen yedek dosyası geçersiz veya bozuk.";
+                    result.Message = "🔴 Seçilen yedek dosyası geçersiz veya bozuk.";
                     return result;
                 }
 
@@ -449,7 +457,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             }
         }
 
-        public async Task<int> CleanOldBackupsAsync(int keepLast = 10, CancellationToken cancellationToken = default)
+        public async Task<int> CleanOldBackupsAsync(int keepLast, CancellationToken cancellationToken = default)
         {
             try
             {

@@ -181,6 +181,10 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 logger: _logger,
                 ct: cancellationToken)
                 .ConfigureAwait(false);
+            if (result.IsDatabaseExists)
+            {
+                result.DatabaseFileSizeBytes = _applicationPaths.GetTenantDatabaseSize(databaseName);
+            }
 
             // Extension metod tamamlandı, şimdi context dispose edilebilir
             return result;

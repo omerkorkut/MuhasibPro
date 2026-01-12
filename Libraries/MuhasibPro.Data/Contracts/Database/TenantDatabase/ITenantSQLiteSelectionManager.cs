@@ -35,6 +35,6 @@ namespace MuhasibPro.Data.Contracts.Database.TenantDatabase
         /// <summary>
         /// Clears the current tenant (sets to empty)
         /// </summary>
-        void ClearCurrentTenant();
+        Task ClearCurrentTenantAsync(CancellationToken cancellationToken = default);
     }
 }

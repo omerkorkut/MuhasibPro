@@ -10,15 +10,15 @@ namespace MuhasibPro.Data.Contracts.Database.SistemDatabase
         /// <summary>
         /// Backup'tan geri yükler
         /// </summary>
-        Task<bool> RestoreBackupAsync(string backupFileName, CancellationToken cancellationToken);
+        Task<DatabaseRestoreExecutionResult> RestoreBackupAsync(string backupFileName, CancellationToken cancellationToken);
 
         /// <summary>
         /// Mevcut backup'ları listeler
         /// </summary>
         Task<List<DatabaseBackupResult>> GetBackupsAsync();
         DateTime? GetLastBackupDate();
-        Task<int> CleanOldBackupsAsync(int keepLast = 10, CancellationToken cancellationToken = default);
-        Task<DatabaseRestoreExecutionResult> RestoreBackupDetailsAsync(string backupFileName, CancellationToken cancellationToken);
+        Task<int> CleanOldBackupsAsync(int keepLast, CancellationToken cancellationToken = default);
+        
         Task<bool> RestoreFromLatestBackupAsync(CancellationToken cancellationToken);
     }
 }

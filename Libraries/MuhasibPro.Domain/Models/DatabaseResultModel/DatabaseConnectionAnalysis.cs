@@ -31,7 +31,7 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
             // Eğer her şey teknik olarak tamamsa ama bekleyen güncelleme varsa
             if (IsUpdateRequired) return DatabaseStatusResult.RequiredUpdating;
 
-            return DatabaseStatusResult.Success;
+            return DatabaseStatusResult.Healty;
         }
 
         // Akıllı Mesaj Yönetimi
@@ -41,14 +41,14 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
 
             return status switch
             {
-                DatabaseStatusResult.DatabaseNotFound => "Veritabanı dosyası belirtilen yolda bulunamadı.",
+                DatabaseStatusResult.DatabaseNotFound => $"Veritabanı dosyası bulunamadı : {DatabaseName}",
                 DatabaseStatusResult.ConnectionFailed => "Dosyaya erişim sağlanıyor ancak bağlantı reddedildi.",
                 DatabaseStatusResult.InvalidSchema => "Veritabanı yapısı bozulmuş veya eksik tablolar var.",
                 DatabaseStatusResult.RequiredUpdating => IsEmptyDatabase
                     ? "Veritabanı boş, ilk kurulum yapılması gerekiyor."
                     : $"Veritabanı güncel değil. {PendingMigrations.Count} adet güncelleme uygulanmalı.",
                 DatabaseStatusResult.RestoreCompleted => $"{DatabaseName} - Veritabanı yedekten başarıyla geri alındı",
-                DatabaseStatusResult.Success => "Veritabanı sağlıklı ve tüm güncellemeler yapılmış.",
+                DatabaseStatusResult.Healty => "Veritabanı sağlıklı ve tüm güncellemeler yapılmış.",
                 _ => $"Analiz sırasında bir sorun tespit edildi: {Message}"
             };
         }

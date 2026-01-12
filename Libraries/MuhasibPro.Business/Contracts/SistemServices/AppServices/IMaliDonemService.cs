@@ -1,4 +1,4 @@
-﻿using MuhasibPro.Business.EntityModel.SistemModel;
+﻿using MuhasibPro.Business.DTOModel.SistemModel;
 using MuhasibPro.Domain.Common;
 using MuhasibPro.Domain.Entities.SistemEntity;
 using MuhasibPro.Domain.Utilities.Responses;

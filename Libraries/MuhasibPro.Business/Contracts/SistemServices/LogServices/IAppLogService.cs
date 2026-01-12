@@ -1,4 +1,4 @@
-﻿using MuhasibPro.Business.EntityModel.SistemModel;
+﻿using MuhasibPro.Business.DTOModel.SistemModel;
 using MuhasibPro.Domain.Common;
 using MuhasibPro.Domain.Entities.MuhasebeEntity.DegerlerEntities;
 using MuhasibPro.Domain.Enum;

@@ -1,7 +1,7 @@
 ﻿using MuhasibPro.Business.Contracts.SistemServices.AppServices;
 using MuhasibPro.Business.Contracts.UIServices;
-using MuhasibPro.Business.EntityModel;
-using MuhasibPro.Business.EntityModel.SistemModel;
+using MuhasibPro.Business.DTOModel;
+using MuhasibPro.Business.DTOModel.SistemModel;
 using MuhasibPro.Data.Contracts.Repository.SistemRepos;
 using MuhasibPro.Domain.Entities.SistemEntity;
 using MuhasibPro.Domain.Utilities.Responses;
@@ -12,8 +12,7 @@ namespace MuhasibPro.Business.Extensions.SistemService.AppService
     {
         public static void UpdateFirmaModel(Firma target, FirmaModel source)
         {
-            var firma = ModelFactory.UpdateEntity<Firma, FirmaModel>(
-                source,
+            var firma = ModelFactory.UpdateEntityFromModel(target, source,
                 (entity, model) =>
                 {
                     entity.Adres = model.Adres;
@@ -45,8 +44,8 @@ namespace MuhasibPro.Business.Extensions.SistemService.AppService
                 throw new ArgumentNullException(nameof(source));
             try
             {
-                var model = await ModelFactory.CreateModelAsync<FirmaModel, Firma>(
-                    source,
+                var model = await ModelFactory.CreateModelFromEntityAsync<FirmaModel, Firma>(
+                    source,                    
                     boolIncludeAllFields,
                     async (model, entity, include) =>
                     {
@@ -96,7 +95,7 @@ namespace MuhasibPro.Business.Extensions.SistemService.AppService
                 var item = await repository.GetByFirmaIdAsync(firmaId);
                 if (item == null)
                 {
-                    return new ErrorApiDataResponse<FirmaModel>(data: null, message: "❌ Firma bulunamadı");
+                    return new ErrorApiDataResponse<FirmaModel>(data: null, message: "⚠️ Firma bulunamadı");
                 }
                 var model = await CreateFirmaModelAsync(source: item, boolIncludeAllFields: true, bitmapTools);
                 return new SuccessApiDataResponse<FirmaModel>(data: model, message: "✅ İşlem başarılı");

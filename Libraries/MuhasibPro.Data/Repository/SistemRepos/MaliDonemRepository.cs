@@ -33,18 +33,12 @@ namespace MuhasibPro.Data.Repository.SistemRepos
                 .Include(r => r.Firma)
                 .FirstOrDefaultAsync()
                 .ConfigureAwait(false);
-        }
-        public MaliDonem GetByMaliDonemId(long id)
-        {
-            return DbSet.Where(r => r.Id == id)
-                .Include(r => r.Firma)
-                .FirstOrDefault();
-
-        }
+        }   
 
         public async Task<IList<MaliDonem>> GetMaliDonemKeysAsync(int skip, int take, DataRequest<MaliDonem> request)
         {
             IQueryable<MaliDonem> items = GetQuery(request);
+            items.Include(r => r.Firma);
             var record = await items.Skip(skip).Take(take)
                 .Select(r => new MaliDonem
                 {
@@ -59,10 +53,9 @@ namespace MuhasibPro.Data.Repository.SistemRepos
         public async Task<IList<MaliDonem>> GetMaliDonemlerAsync(int skip, int take, DataRequest<MaliDonem> request)
         {
             IQueryable<MaliDonem> items = GetQuery(request);
-
+            items.Include(r => r.Firma);
             // Execute
-            var records = await items.Skip(skip).Take(take)
-                .Include(r => r.Firma)
+            var records = await items.Skip(skip).Take(take)                
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -87,7 +80,7 @@ namespace MuhasibPro.Data.Repository.SistemRepos
             return await items.CountAsync();
         }
 
-        public async Task<bool> IsMaliDonem()
+        public async Task<bool> IsMaliDonemAnyAsync()
         {
             return await DbSet.AnyAsync();
         }

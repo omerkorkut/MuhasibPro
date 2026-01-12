@@ -15,13 +15,8 @@ public class MaliDonem : BaseEntity
 
 
     [Required]
-    public string DBName { get; set; }
-
-    [Required]
-    public string Directory { get; set; }
-    [Required]
-    [StringLength(1000)]
-    public string DBPath { get; set; }
+    public string DatabaseName { get; set; }
+   
     public DatabaseType DatabaseType { get; set; }
 
     public Firma Firma { get; set; }

@@ -14,6 +14,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         private readonly ConcurrentDictionary<string, ConnectionCacheEntry> _connectionCache = new();
 
         private TenantContext _currentTenant = TenantContext.Empty;
+
         private event Action<TenantContext> TenantChangedInternal;
         private readonly object _eventLock = new();
         private bool _disposed;
@@ -24,7 +25,6 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         {
             _connectionStringFactory = connectionStringFactory;
             _logger = logger;
-
         }
 
         #region Public Interface
@@ -34,13 +34,17 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         {
             add
             {
-                if (value == null) return;
-                lock (_eventLock) TenantChangedInternal += value;
+                if(value == null)
+                    return;
+                lock(_eventLock)
+                    TenantChangedInternal += value;
             }
             remove
             {
-                if (value == null) return;
-                lock (_eventLock) TenantChangedInternal -= value;
+                if(value == null)
+                    return;
+                lock(_eventLock)
+                    TenantChangedInternal -= value;
             }
         }
 
@@ -50,7 +54,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             string databaseName,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(databaseName))
+            if(string.IsNullOrWhiteSpace(databaseName))
                 throw new ArgumentException("Database name required", nameof(databaseName));
 
             ThrowIfDisposed();
@@ -59,8 +63,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             try
             {
                 return await SwitchToTenantCoreAsync(databaseName, cancellationToken);
-            }
-            finally
+            } finally
             {
                 _tenantSemaphore.Release();
             }
@@ -78,26 +81,22 @@ namespace MuhasibPro.Data.Database.TenantDatabase
 
                 SafeInvokeTenantChanged(TenantContext.Empty);
                 _logger.LogInformation("Tenant cleared: {DatabaseName}", oldTenant.DatabaseName);
-            }
-            finally
+            } finally
             {
                 _tenantSemaphore.Release();
             }
         }
 
-        public void ClearCurrentTenant()
-        {
-            ClearCurrentTenantAsync().GetAwaiter().GetResult();
-        }
+        
         #endregion
 
         #region Core Logic
         private async Task<TenantContext> SwitchToTenantCoreAsync(
-    string databaseName,
-    CancellationToken cancellationToken)
+            string databaseName,
+            CancellationToken cancellationToken)
         {
             // 1. Check if already current
-            if (_currentTenant.DatabaseName == databaseName && _currentTenant.IsLoaded)
+            if(_currentTenant.DatabaseName == databaseName && _currentTenant.IsLoaded)
             {
                 var updated = _currentTenant.WithRefreshedConnection();
                 _currentTenant = updated;
@@ -105,9 +104,11 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             }
 
             // 2. Test connection
-            var connectionResult = await _connectionStringFactory.ValidateConnectionStringAsync(databaseName, cancellationToken);
+            var connectionResult = await _connectionStringFactory.ValidateConnectionStringAsync(
+                databaseName,
+                cancellationToken);
 
-            if (!connectionResult.canConnect)
+            if(!connectionResult.canConnect)
             {
                 var errorTenant = _currentTenant.WithMessage($"Bağlantı hatası: {connectionResult.message}");
                 _currentTenant = errorTenant;
@@ -119,8 +120,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 databaseName: databaseName,
                 connectionString: connectionResult.connectionString,
                 canConnect: true,
-                message: connectionResult.message
-            );
+                message: connectionResult.message);
 
             // 4. Switch
             var oldTenant = _currentTenant;
@@ -128,11 +128,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
 
             // 5. Notify
             SafeInvokeTenantChanged(newTenant);
-            _logger.LogInformation(
-                "Tenant switched: {Old} -> {New}",
-                oldTenant.DatabaseName,
-                newTenant.DatabaseName
-            );
+            _logger.LogInformation("Tenant switched: {Old} -> {New}", oldTenant.DatabaseName, newTenant.DatabaseName);
 
             return newTenant;
         }
@@ -140,20 +136,20 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         private void SafeInvokeTenantChanged(TenantContext tenant)
         {
             Action<TenantContext> handlers;
-            lock (_eventLock)
+            lock(_eventLock)
             {
                 handlers = TenantChangedInternal;
             }
 
-            if (handlers == null) return;
+            if(handlers == null)
+                return;
 
-            foreach (Action<TenantContext> handler in handlers.GetInvocationList())
+            foreach(Action<TenantContext> handler in handlers.GetInvocationList())
             {
                 try
                 {
                     handler(tenant);
-                }
-                catch (Exception ex)
+                } catch(Exception ex)
                 {
                     _logger.LogError(ex, "TenantChanged handler error");
                 }
@@ -162,17 +158,17 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         #endregion
 
 
-
         #region Disposal
         private void ThrowIfDisposed()
         {
-            if (_disposed)
+            if(_disposed)
                 throw new ObjectDisposedException(nameof(TenantSQLiteSelectionManager));
         }
 
         public async ValueTask DisposeAsync()
         {
-            if (_disposed) return;
+            if(_disposed)
+                return;
 
             await ClearCurrentTenantAsync();
             _tenantSemaphore.Dispose();
@@ -180,17 +176,11 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             _disposed = true;
         }
 
-        public void Dispose()
-        {
-            DisposeAsync().AsTask().GetAwaiter().GetResult();
-        }
+        public void Dispose() { DisposeAsync().AsTask().GetAwaiter().GetResult(); }
         #endregion
 
         #region Helper Types
-        private record ConnectionCacheEntry(
-            string ConnectionString,
-            DateTime LastValidated,
-            string DatabasePath);
+        private record ConnectionCacheEntry(string ConnectionString, DateTime LastValidated, string DatabasePath);
         #endregion
     }
 }

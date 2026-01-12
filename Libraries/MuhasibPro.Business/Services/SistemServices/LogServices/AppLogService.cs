@@ -1,13 +1,13 @@
 ﻿using MuhasibPro.Business.Contracts.CommonServices;
 using MuhasibPro.Business.Contracts.SistemServices.Authentication;
 using MuhasibPro.Business.Contracts.SistemServices.LogServices;
-using MuhasibPro.Business.EntityModel.SistemModel;
+using MuhasibPro.Business.DTOModel.SistemModel;
 using MuhasibPro.Data.Contracts.Repository.Common;
 using MuhasibPro.Domain.Common;
 using MuhasibPro.Domain.Entities.MuhasebeEntity.DegerlerEntities;
 using MuhasibPro.Domain.Enum;
 
-namespace MuhasibPro.Services.Infrastructure.LogServices
+namespace MuhasibPro.Business.Services.SistemServices.LogServices
 {
     public class AppLogService : IAppLogService
     {
@@ -54,8 +54,8 @@ namespace MuhasibPro.Services.Infrastructure.LogServices
         {
             var appLog = new AppLog()
             {
-                User = _authenticationService!.CurrentUsername,
-                KaydedenId = _authenticationService!.CurrentUserId,
+                User = _authenticationService!.GetCurrentUsername,
+                KaydedenId = _authenticationService!.GetCurrentUserId,
                 Type = type,
                 Source = source,
                 Action = action,

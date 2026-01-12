@@ -1,4 +1,4 @@
-﻿using MuhasibPro.Business.EntityModel.SistemModel;
+﻿using MuhasibPro.Business.DTOModel.SistemModel;
 using MuhasibPro.Domain.Models;
 
 namespace MuhasibPro.Business.Contracts.SistemServices.Authentication
@@ -10,8 +10,8 @@ namespace MuhasibPro.Business.Contracts.SistemServices.Authentication
         Task<RegistrationResult> Register(string email, string username, string password, string confirmPassword);
         Task Login(string username, string password);
         void Logout();
-        string CurrentUsername { get; }
-        long CurrentUserId { get; }
+        string GetCurrentUsername { get; }
+        long GetCurrentUserId { get; }
         event Action StateChanged;
     }
 }

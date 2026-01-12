@@ -10,7 +10,7 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
         public override DatabaseStatusResult GetStatus()
         {
             if (HasError) return DatabaseStatusResult.UnknownError;
-            if (IsDeletedSuccess) return DatabaseStatusResult.Success;
+            if (IsDeletedSuccess) return DatabaseStatusResult.Healty;
 
             return DatabaseStatusResult.UnknownError;
         }
