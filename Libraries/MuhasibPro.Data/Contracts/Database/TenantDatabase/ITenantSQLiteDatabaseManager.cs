@@ -19,6 +19,7 @@ namespace MuhasibPro.Data.Contracts.Database.TenantDatabase
         Task<(bool isValid, string Message)> ValidateTenantDatabaseAsync(
             string databaseName,
             CancellationToken cancellationToken);
+        (bool tenantFileExist, bool tenantDbValid) CheckTenantDatabaseState(string databaseName);
 
 
     }

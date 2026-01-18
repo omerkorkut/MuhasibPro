@@ -332,7 +332,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 if(string.IsNullOrEmpty(latestMigration))
                     return;
 
-                var newVersion = DatabaseUtilityHelper.ExtractVersionFromMigration(latestMigration);
+                var newVersion = DatabaseUtilityExtensionsHelper.ExtractVersionFromMigration(latestMigration);
 
                 // Transaction başlat
                 await using var transaction = await context.Database

@@ -16,7 +16,7 @@ namespace MuhasibPro.Data.Repository.Common.BaseRepo
 
         public TContext Context => _context;
 
-        public async Task<ITransaction> BeginTransactionAsync()
+        public async Task<ITransaction> BeginTransactionAsync(CancellationToken cancellationToken)
         {
             if (_currentTransaction != null)
             {
@@ -26,7 +26,7 @@ namespace MuhasibPro.Data.Repository.Common.BaseRepo
                 throw new InvalidOperationException("Zaten aktif bir transaction mevcut.");
             }
 
-            _currentTransaction = await _context.Database.BeginTransactionAsync();
+            _currentTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
             // EfTransaction wrapper'ına (kendi yazdığınız sınıf) context ve transaction'ı veriyoruz.
             // Önemli: Transaction bittiğinde _currentTransaction null yapılmalı.
@@ -37,11 +37,11 @@ namespace MuhasibPro.Data.Repository.Common.BaseRepo
         /// Değişiklikleri veritabanına yazar.
         /// İsimlendirme SaveChangesAsync olarak değiştirildi çünkü yaptığı iş bu.
         /// </summary>
-        public async Task<int> SaveChangesAsync()
+        public async Task<int> SaveChangesAsync(CancellationToken cancellationToken)
         {
             try
             {
-                return await _context.SaveChangesAsync();
+                return await _context.SaveChangesAsync(cancellationToken);
             }
             catch
             {
@@ -50,7 +50,7 @@ namespace MuhasibPro.Data.Repository.Common.BaseRepo
                 // Eğer burada rollback yapacaksanız:
                 if (_currentTransaction != null)
                 {
-                    await _currentTransaction.RollbackAsync();
+                    await _currentTransaction.RollbackAsync(cancellationToken);
                     await _currentTransaction.DisposeAsync();
                     _currentTransaction = null;
                 }

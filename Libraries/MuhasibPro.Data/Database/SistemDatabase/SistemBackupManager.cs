@@ -54,7 +54,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 }
 
                 var backupDir = _applicationPaths.GetBackupFolderPath();
-                var backupFileName = DatabaseUtilityHelper.GenerateBackupFileName(databaseName: _databaseName);
+                var backupFileName = DatabaseUtilityExtensionsHelper.GenerateBackupFileName(databaseName: _databaseName);
                 var backupPath = Path.Combine(backupDir, backupFileName);
                 try
                 {

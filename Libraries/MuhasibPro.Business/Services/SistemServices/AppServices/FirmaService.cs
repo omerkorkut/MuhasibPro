@@ -204,7 +204,7 @@ namespace MuhasibPro.Business.Services.SistemServices.AppServices
             }
         }
 
-        public async Task<ApiDataResponse<int>> UpdateFirmaAsync(FirmaModel model)
+        public async Task<ApiDataResponse<int>> UpdateFirmaAsync(FirmaModel model,CancellationToken cancellationToken)
         {
             if(_authenticationService.GetCurrentUserId <= 0)
             {
@@ -228,7 +228,7 @@ namespace MuhasibPro.Business.Services.SistemServices.AppServices
                 FirmaServiceExtensions.UpdateFirmaModel(firma, model);
                 await _firmaRepository.UpdateFirmaAsync(firma);
 
-                var result = await _unitOfWork.SaveChangesAsync();
+                var result = await _unitOfWork.SaveChangesAsync(cancellationToken);
                 if(result > 0)
                 {
                     await _logService.SistemLogService
@@ -259,7 +259,7 @@ namespace MuhasibPro.Business.Services.SistemServices.AppServices
             }
         }
 
-        public async Task<ApiDataResponse<int>> DeleteFirmaAsync(long firmaId)
+        public async Task<ApiDataResponse<int>> DeleteFirmaAsync(long firmaId,CancellationToken cancellationToken)
         {
             if(_authenticationService.GetCurrentUserId <= 0)
             {
@@ -274,7 +274,7 @@ namespace MuhasibPro.Business.Services.SistemServices.AppServices
                     return new ErrorApiDataResponse<int>(data: 0, message: "🔴 Silinecek firma bulunamadı!");
                 
                 await _firmaRepository.DeleteFirmalarAsync(firma);
-                var result = await _unitOfWork.SaveChangesAsync();
+                var result = await _unitOfWork.SaveChangesAsync(cancellationToken);
                 if(result > 0)
                 {
                     await _logService.SistemLogService
@@ -293,7 +293,7 @@ namespace MuhasibPro.Business.Services.SistemServices.AppServices
             }
         }
 
-        public async Task<ApiDataResponse<int>> DeleteFirmaRangeAsync(int index, int length, DataRequest<Firma> request)
+        public async Task<ApiDataResponse<int>> DeleteFirmaRangeAsync(int index, int length, DataRequest<Firma> request,CancellationToken cancellationToken)
         {
             if(_authenticationService.GetCurrentUserId <= 0)
             {
@@ -307,7 +307,7 @@ namespace MuhasibPro.Business.Services.SistemServices.AppServices
                     return new ErrorApiDataResponse<int>(data: 0, message: "❌ Silinecek firma bulunamadı!");
                 }
                 await _firmaRepository.DeleteRangeAsync(items.ToArray());
-                var result = await _unitOfWork.SaveChangesAsync();
+                var result = await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _logService.SistemLogService
                     .SistemLogInformationAsync(
                         nameof(FirmaService),

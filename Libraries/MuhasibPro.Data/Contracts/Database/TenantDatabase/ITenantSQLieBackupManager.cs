@@ -10,7 +10,7 @@ namespace MuhasibPro.Data.Contracts.Database.TenantDatabase
         /// <summary>
         /// Backup'tan geri yükler
         /// </summary>
-        Task<bool> RestoreBackupAsync(string databaseName, string backupFileName, CancellationToken cancellationToken);
+        Task<DatabaseRestoreExecutionResult> RestoreBackupAsync(string databaseName, string backupFileName, CancellationToken cancellationToken);
 
         /// <summary>
         /// Mevcut backup'ları listeler

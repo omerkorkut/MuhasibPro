@@ -14,97 +14,132 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
         }
 
         public async Task<T> ExecuteStepAsync<T>(
-            string stepName,
-            Func<Task<T>> action,
-            Func<T, Task> compensate)
+       string stepName,
+       Func<CancellationToken, Task<T>> action,
+       Func<T, CancellationToken, Task> compensate,
+       CancellationToken cancellationToken = default)
         {
             T result = default;
+            SagaStep sagaStep = null;
 
             try
             {
                 _logger.LogInformation("Saga Step başlatıldı: {StepName}", stepName);
 
-                result = await action();
+                // ⭐ Başarılı olursa kullanılacak step'i önceden oluştur
+                sagaStep = new SagaStep
+                {
+                    StepName = stepName
+                };
 
-                // ✅ KRİTİK: Step başarılı olduğunda HEMEN kaydet
+                result = await action(cancellationToken);
+
+                // ⭐ Compensate'i BAŞARILI OLDUKTAN SONRA oluştur
+                // (result artık biliniyor)
+                if (compensate != null)
+                {
+                    sagaStep.CompensateAction = async () =>
+                        await compensate(result, cancellationToken);
+                }
+
+                sagaStep.Result = result;
+
+                // ✅ Step başarılı olduğunda kaydet
                 lock (_lock)
                 {
-                    _executedSteps.Add(new SagaStep
-                    {
-                        StepName = stepName,
-                        Result = result,
-                        CompensateAction = compensate != null
-                            ? async () => await compensate(result)
-                            : null
-                    });
+                    _executedSteps.Add(sagaStep);
                 }
 
                 _logger.LogInformation("Saga Step tamamlandı: {StepName}", stepName);
                 return result;
             }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("Saga step iptal edildi: {StepName}", stepName);
+                throw;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Saga Step başarısız: {StepName}", stepName);
 
-                // Step başarısız oldu, compensate listesine ekleme
-                // Çünkü zaten rollback yapılacak
+                // ⭐ STEP BAŞARISIZ OLDU, COMPENSATE EKLEME
+                // (zaten hiç execute edilmedi)
                 throw;
             }
         }
 
-        public async Task CompensateAllAsync()
+        public async Task CompensateAllAsync(CancellationToken cancellationToken)
         {
             List<SagaStep> stepsToCompensate;
 
             lock (_lock)
             {
+                if (!_executedSteps.Any())
+                {
+                    _logger.LogInformation("Rollback edilecek step yok");
+                    return;
+                }
+
                 stepsToCompensate = new List<SagaStep>(_executedSteps);
+                _executedSteps.Clear(); // ⭐ Temizle, tekrar çağrılmaması için
             }
 
-            _logger.LogWarning("Toplam {Count} adım rollback edilecek", stepsToCompensate.Count);
+            _logger.LogWarning(
+                "Rollback başlatılıyor: {Count} adım",
+                stepsToCompensate.Count);
 
-            // Ters sırada rollback yap (LIFO - Last In First Out)
-            for (int i = stepsToCompensate.Count - 1; i >= 0; i--)
+            int totalSteps = stepsToCompensate.Count;
+            int completed = 0;
+
+            // Ters sırada rollback (LIFO)
+            for (int i = totalSteps - 1; i >= 0; i--)
             {
                 var step = stepsToCompensate[i];
+                completed++;
 
-                if (step.CompensateAction != null)
+                if (step.CompensateAction == null)
                 {
-                    try
-                    {
-                        _logger.LogInformation("[{Index}/{Total}] Compensating: {StepName}",
-                    stepsToCompensate.Count - i,
-                    stepsToCompensate.Count,
-                    step.StepName);
-
-
-                        await step.CompensateAction();
-
-                        _logger.LogInformation("[{Index}/{Total}] Compensated: {StepName}",
-                     stepsToCompensate.Count - i,
-                     stepsToCompensate.Count,
-                     step.StepName);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(
-                   ex,
-                   "[{Index}/{Total}] Compensation başarısız: {StepName} - Manuel müdahale gerekli!",
-                   stepsToCompensate.Count - i,
-                   stepsToCompensate.Count,
-                   step.StepName);
-
-                        // Diğer compensation'ları denemeye devam et
-                    }
+                    _logger.LogDebug(
+                        "[{Completed}/{Total}] Compensate yok: {StepName}",
+                        completed, totalSteps, step.StepName);
+                    continue;
                 }
-                else
+
+                try
                 {
-                    _logger.LogInformation("[{Index}/{Total}] Compensate yok (atlandı): {StepName}",
-               stepsToCompensate.Count - i,
-               stepsToCompensate.Count,
-               step.StepName);
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    _logger.LogInformation(
+                        "[{Completed}/{Total}] Compensating: {StepName}",
+                        completed, totalSteps, step.StepName);
+
+                    await step.CompensateAction();
+
+                    _logger.LogInformation(
+                        "[{Completed}/{Total}] Compensated: {StepName}",
+                        completed, totalSteps, step.StepName);
+                }
+                catch (OperationCanceledException)
+                {
+                    _logger.LogWarning(
+                        "[{Completed}/{Total}] Compensation iptal edildi: {StepName}",
+                        completed, totalSteps, step.StepName);
+                    throw; // ⭐ Yukarıya fırlat, diğerlerini durdur
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "[{Completed}/{Total}] Compensation başarısız: {StepName}",
+                        completed, totalSteps, step.StepName);
+
+                    // ⭐ DEVAM ET: Diğer step'leri compensate etmeye devam
                 }
             }
+
+            _logger.LogInformation(
+                "Rollback tamamlandı: {Completed}/{Total} adım",
+                completed, totalSteps);
         }
 
         private class SagaStep

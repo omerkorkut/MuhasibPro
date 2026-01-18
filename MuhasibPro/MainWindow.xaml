@@ -82,7 +82,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Text="Analiz Logları" 
+                        <TextBlock x:Name="analizLog" 
                                    VerticalAlignment="Center"/>
 
                         <Button Grid.Column="1"

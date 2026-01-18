@@ -133,7 +133,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 if (tenantdbState.tenatFileExist)
                 {
                     result.HasError = true;
-                    result.Message = "Tenant database zaten mevcut.";
+                    result.Message = "Veritabanı zaten mevcut.";
                     return result;
                 }
 
@@ -250,7 +250,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 if (string.IsNullOrEmpty(latestMigration))
                     return;
 
-                var newVersion = DatabaseUtilityHelper.ExtractVersionFromMigration(latestMigration);
+                var newVersion = DatabaseUtilityExtensionsHelper.ExtractVersionFromMigration(latestMigration);
 
                 // Transaction başlat
                 await using var transaction = await context.Database

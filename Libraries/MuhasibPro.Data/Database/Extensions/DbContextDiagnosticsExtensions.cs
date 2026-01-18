@@ -187,7 +187,7 @@ namespace MuhasibPro.Data.Database.Extensions
 
                     analysis.PendingMigrations = pending;
                     analysis.AppliedMigrationsCount = applied.Count;
-                    analysis.CurrentVersion = DatabaseUtilityHelper.ExtractVersionFromMigration(applied.LastOrDefault());
+                    analysis.CurrentVersion = DatabaseUtilityExtensionsHelper.ExtractVersionFromMigration(applied.LastOrDefault());
 
                     analysis.ReportProgress(
                         $"✓ Migration analizi: {applied.Count} uygulanmış, {pending.Count} bekleyen",

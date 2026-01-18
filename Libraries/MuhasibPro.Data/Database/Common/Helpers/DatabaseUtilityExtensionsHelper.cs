@@ -1,11 +1,13 @@
-﻿namespace MuhasibPro.Data.Database.Common.Helpers
+﻿using MuhasibPro.Data.Contracts.Database.Common.Helpers;
+
+namespace MuhasibPro.Data.Database.Common.Helpers
 {
-    public static class DatabaseUtilityHelper
+    public static class DatabaseUtilityExtensionsHelper
     {
-        public static string GenerateTenantDatabaseName(string prefix, string firmaKodu, int maliYil)
+        public static string GenerateTenantDatabaseName(this IApplicationPaths paths, string prefix, string firmaKodu, int maliYil)
         {
             // Tüm SQL adlarını büyük harf kullanmak ve özel karakterden kaçınmak iyi bir pratiktir.
-            return $"{prefix}_{firmaKodu.ToUpper()}_{maliYil}";
+            return paths.SanitizeDatabaseName($"{prefix}_{firmaKodu.ToUpper()}_{maliYil}");
         }
 
         public static string GenerateBackupFileName(string databaseName, string suffix = null)

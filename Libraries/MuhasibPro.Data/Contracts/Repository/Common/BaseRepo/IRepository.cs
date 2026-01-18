@@ -23,7 +23,7 @@ namespace MuhasibPro.Data.Contracts.Repository.Common.BaseRepo
         Task<T?> GetByIdAsync(long id);
         Task<IList<T>> GetAllAsync();
         Task<T> FindAsync(Expression<Func<T, bool>> predicate);
-        Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
+        Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate,CancellationToken cancellationToken);
 
         // Paged & Advanced Queries
         Task<IList<T>> GetPagedAsync(int skip, int take, DataRequest<T> request);

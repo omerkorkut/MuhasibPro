@@ -10,5 +10,7 @@
         UnknownError,        // Beklenmedik bir Exception durumu       
         RestoreCompleted,   // Yedekten geri yüklendi
         
+        
+        
     }
 }

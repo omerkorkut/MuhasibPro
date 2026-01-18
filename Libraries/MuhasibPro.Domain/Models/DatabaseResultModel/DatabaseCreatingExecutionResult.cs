@@ -4,11 +4,13 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
 {
     public class DatabaseCreatingExecutionResult : BaseDatabaseResult
     {
+      
         public bool IsCreatedSuccess { get; set; }
+    
         public override string OperationDisplayName => "Veritabanı Oluşturma";
 
         public override DatabaseStatusResult GetStatus()
-        {
+        {    
             if (HasError) return DatabaseStatusResult.UnknownError;
             if (IsCreatedSuccess && CanConnect) return DatabaseStatusResult.Healty;
             if (!CanConnect) return DatabaseStatusResult.ConnectionFailed;
@@ -17,7 +19,7 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
         }
 
         public override string GetStatusMessage()
-        {
+        {            
             if (HasError) return $"Veritabanı oluşturulurken hata: {Message}";
 
             return IsCreatedSuccess

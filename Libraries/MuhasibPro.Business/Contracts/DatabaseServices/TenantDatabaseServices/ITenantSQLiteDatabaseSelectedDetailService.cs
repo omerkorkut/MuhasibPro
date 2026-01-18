@@ -5,9 +5,11 @@ using MuhasibPro.Domain.Utilities.Responses;
 
 namespace MuhasibPro.Business.Contracts.DatabaseServices.TenantDatabaseServices
 {
-    public interface ITenantSQLiteInfoService
+    public interface ITenantSQLiteDatabaseSelectedDetailService
     {
-        Task<ApiDataResponse<List<TenantSelectionModel>>> GetTenantsForSelectionAsync(long? firmaId = null, DataRequest<MaliDonem> request = null);
+        Task<ApiDataResponse<List<TenantSelectionModel>>> GetUserTenantsForSelectionAsync(
+            DataRequest<Firma> request,
+            long userId);
         Task<ApiDataResponse<TenantDetailsModel>> GetTenantDetailsAsync(long maliDonemId);
     }
 }

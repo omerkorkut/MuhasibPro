@@ -6,6 +6,7 @@ using MuhasibPro.Data.Contracts.Database.SistemDatabase;
 using MuhasibPro.Domain.Models.DatabaseResultModel.DatabaseDiagModel;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Reflection;
 using Windows.UI;
 
 
@@ -41,7 +42,9 @@ namespace MuhasibPro
 
             // Data binding
             LogMessagesControl.ItemsSource = _logMessages;
-
+             
+            
+            analizLog.Text = "Analiz Loglarý";
             // Initial state
             UpdateLogStatus();
         }

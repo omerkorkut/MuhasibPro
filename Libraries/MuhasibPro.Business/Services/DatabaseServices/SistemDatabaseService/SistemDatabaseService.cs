@@ -19,7 +19,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.SistemDatabaseService
             _logService = logService;
         }
 
-        public async Task<ApiDataResponse<DatabaseConnectionAnalysis>> GetHealthStatusAsync(CancellationToken cancellationToken=default)
+        public async Task<ApiDataResponse<DatabaseConnectionAnalysis>> GetSistemDatabaseStateAsync(CancellationToken cancellationToken=default)
         {
             var analysis = new DatabaseConnectionAnalysis();
             try
@@ -29,9 +29,12 @@ namespace MuhasibPro.Business.Services.DatabaseServices.SistemDatabaseService
                 {
                     return new ErrorApiDataResponse<DatabaseConnectionAnalysis>(data: analysis,message:"Sistem veritabanı analiz edilemedi");
                 }
-                if(analysisResult.IsDatabaseExists && analysis.CanConnect)
+                if(analysisResult.HasError)
                 {
-                    await _logService.SistemLogService.SistemLogInformationAsync("Sistem Veritabanı", "Sistem Veritabanı Analiz İşlemleri", "Analiz işlemi sonuçlandı", analysis.Message);
+                    await _logService.SistemLogService.SistemLogErrorAsync(
+                        "Sistem Veritabanı İşlemleri", 
+                        "Sistem Veritabanı Analizi", 
+                        "Analiz işleminde hata oluştu", analysis.Message);
                 }
                 return new SuccessApiDataResponse<DatabaseConnectionAnalysis>(data:analysisResult,message: analysisResult.Message);
             }

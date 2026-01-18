@@ -2,7 +2,7 @@
 
 public interface IUnitOfWork<TContext> : IDisposable where TContext : class
 {
-    Task<ITransaction> BeginTransactionAsync();
-    Task<int> SaveChangesAsync();
+    Task<ITransaction> BeginTransactionAsync(CancellationToken cancellationToken);
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     TContext Context { get; }
 }

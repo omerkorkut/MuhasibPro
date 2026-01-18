@@ -14,7 +14,7 @@ using MuhasibPro.Domain.Utilities.Responses;
 
 namespace MuhasibPro.Business.Services.SistemServices.AppServices
 {
-    public class MaliDonemService
+    public class MaliDonemService : IMaliDonemService
     {
         private readonly IMaliDonemRepository _maliDonemRepository;
         private readonly ILogService _logService;
@@ -95,6 +95,13 @@ namespace MuhasibPro.Business.Services.SistemServices.AppServices
 
         public async Task<bool> IsMaliDonemAnyAsync() => await _maliDonemRepository.IsMaliDonemAnyAsync();
 
+        public  async Task<bool> IsMaliDonemExistsAsync(long firmaId, int maliYil,CancellationToken cancellationToken)
+        {
+            var donem = await _maliDonemRepository.FirstOrDefaultAsync(a => a.FirmaId == firmaId && a.MaliYil == maliYil,cancellationToken);
+            if (donem != null)
+                return true;
+            return false;
+        }
         public async Task<ApiDataResponse<int>> GetMaliDonemlerCountAsync(DataRequest<MaliDonem> request)
         {
             try
@@ -159,7 +166,7 @@ namespace MuhasibPro.Business.Services.SistemServices.AppServices
 
 
 
-        public async Task<ApiDataResponse<int>> UpdateMaliDonemAsync(MaliDonemModel model)
+        public async Task<ApiDataResponse<int>> UpdateMaliDonemAsync(MaliDonemModel model,CancellationToken cancellationToken)
         {
             if(_authenticationService.GetCurrentUserId <= 0)
                 return new ErrorApiDataResponse<int>(data: 0, message: "⚠️ İşlem yapan kullanıcı bilgisi alınamadı!");
@@ -183,7 +190,7 @@ namespace MuhasibPro.Business.Services.SistemServices.AppServices
                 MaliDonemServiceExtensions.UpdateMaliDonemModel(maliDonem, model);
                 await _maliDonemRepository.UpdateMaliDonemAsync(maliDonem);
 
-                var result = await _unitOfWork.SaveChangesAsync();
+                var result = await _unitOfWork.SaveChangesAsync(cancellationToken);
                 if(result > 0)
                 {
                     await _logService.SistemLogService
@@ -215,7 +222,7 @@ namespace MuhasibPro.Business.Services.SistemServices.AppServices
             }
         }
 
-        public async Task<ApiDataResponse<int>> DeleteMaliDonemAsync(long maliDonemId)
+        public async Task<ApiDataResponse<int>> DeleteMaliDonemAsync(long maliDonemId,CancellationToken cancellationToken)
         {
             if(_authenticationService.GetCurrentUserId <= 0)
                 return new ErrorApiDataResponse<int>(data: 0, message: "⚠️ İşlem yapan kullanıcı bilgisi alınamadı!");
@@ -228,7 +235,7 @@ namespace MuhasibPro.Business.Services.SistemServices.AppServices
                     return new ErrorApiDataResponse<int>(data: 0, message: "⚠️ Mali Dönem bulunamadı!");
 
                 await _maliDonemRepository.DeleteMaliDonemlerAsync(maliDonem);
-                var result = await _unitOfWork.SaveChangesAsync();
+                var result = await _unitOfWork.SaveChangesAsync(cancellationToken);
                 if(result > 0)
                 {
                     await _logService.SistemLogService

@@ -3,9 +3,10 @@
     public class TenantCreationRequest
     {
         public long FirmaId { get; set; }
+        public long MaliDonemId { get; set; }
+        public string DatabaseName { get; set; }
         public int MaliYil { get; set; }
-        public bool AutoCreateDatabase { get; set; } = true;
-        public bool RunMigrations { get; set; } = true;
-        public bool CreateInitialBackup { get; set; } = false;
+        public bool AutoCreateDatabase { get; set; } = true;       
+       
     }
 }

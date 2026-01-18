@@ -22,7 +22,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             _logger = logger;
         }
 
-        private (bool tenantFileExist, bool tenantDbValid) CheckTenantDatabaseState(string databaseName)
+        public (bool tenantFileExist, bool tenantDbValid) CheckTenantDatabaseState(string databaseName)
         {
             var tenantFileExist = _applicationPaths.TenantDatabaseFileExists(databaseName);
             var tenantDbValid = _applicationPaths.IsTenantDatabaseValid(databaseName);

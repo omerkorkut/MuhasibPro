@@ -74,7 +74,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                     return result;
                 }
                 var backupDir = GetTenantBackupFolderPath;
-                var backupFileName = DatabaseUtilityHelper.GenerateBackupFileName(databaseName);
+                var backupFileName = DatabaseUtilityExtensionsHelper.GenerateBackupFileName(databaseName);
                 var backupPath = Path.Combine(backupDir, backupFileName);
                 try
                 {
@@ -200,20 +200,23 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             }
         }
 
-        public async Task<bool> RestoreBackupAsync(
+        public async Task<DatabaseRestoreExecutionResult> RestoreBackupAsync(
             string databaseName,
             string backupFileName,
             CancellationToken cancellationToken)
         {
+            var restore = new DatabaseRestoreExecutionResult();
             try
             {
                 var restoreResult = await RestoreBackupDetailsAsync(databaseName, backupFileName, cancellationToken);
-                return restoreResult.IsRestoreSuccess;
+                if (restoreResult.IsRestoreSuccess)
+                    return restoreResult;
+                return restoreResult;
             }
             catch (Exception ex)
             {
                 _logger?.LogDebug(ex, "Son geri yükleme işlemi başarısız: {DatabaseName}", backupFileName);
-                return false;
+                return restore;
             }
         }
 
@@ -396,7 +399,10 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 return false;
 
             // 4. O backup'ı geri yükle
-            return await RestoreBackupAsync(databaseName, latestBackup.BackupFileName, cancellationToken);
+            var restoreBackup = await RestoreBackupDetailsAsync(databaseName, latestBackup.BackupFileName, cancellationToken);
+            if (restoreBackup.IsRestoreSuccess)
+                return true;
+            return false;
         }
         private async Task<bool> RollbackToSafetyBackupAsync(
         string targetPath,
