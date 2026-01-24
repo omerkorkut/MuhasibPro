@@ -5,20 +5,20 @@ namespace MuhasibPro.Data.Contracts.Database.SistemDatabase
 {
     public interface ISistemBackupManager
     {
-        Task<DatabaseBackupResult> CreateBackupAsync(DatabaseBackupType backupType, CancellationToken cancellationToken);
+        Task<DatabaseBackupResult> CreateBackupAsync(DatabaseBackupType backupType);
 
         /// <summary>
         /// Backup'tan geri yükler
         /// </summary>
-        Task<DatabaseRestoreExecutionResult> RestoreBackupAsync(string backupFileName, CancellationToken cancellationToken);
+        Task<DatabaseRestoreExecutionResult> RestoreBackupAsync(string backupFileName);
 
         /// <summary>
         /// Mevcut backup'ları listeler
         /// </summary>
         Task<List<DatabaseBackupResult>> GetBackupsAsync();
         DateTime? GetLastBackupDate();
-        Task<int> CleanOldBackupsAsync(int keepLast, CancellationToken cancellationToken = default);
+        Task<int> CleanOldBackupsAsync(int keepLast);
         
-        Task<bool> RestoreFromLatestBackupAsync(CancellationToken cancellationToken);
+        Task<bool> RestoreFromLatestBackupAsync();
     }
 }

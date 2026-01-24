@@ -22,11 +22,11 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             _logger = logger;
             _migrationManager = migrationManager;
         }
-        public async Task<(bool initializeState, string message)> InitializeSistemDatabaseAsync(CancellationToken cancellationToken = default)
+        public async Task<(bool initializeState, string message)> InitializeSistemDatabaseAsync()
         {
             try
             {
-                var initializeDatabase = await _migrationManager.InitializeSistemDatabaseAsync(cancellationToken).ConfigureAwait(false);
+                var initializeDatabase = await _migrationManager.InitializeSistemDatabaseAsync().ConfigureAwait(false);
                 return initializeDatabase;
             }
             catch (Exception ex)
@@ -35,12 +35,12 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 return (false, "❌ Sistem veritabanı başlatma hatası");
             }
         }
-        public async Task<DatabaseConnectionAnalysis> GetSistemDatabaseStateAsync(CancellationToken cancellationToken)
+        public async Task<DatabaseConnectionAnalysis> GetSistemDatabaseStateAsync()
         {
             var analysis = new DatabaseConnectionAnalysis();
             try
             {
-                var databaseHealty = await _migrationManager.GetSistemDatabaseStateAsync(cancellationToken).ConfigureAwait(false);
+                var databaseHealty = await _migrationManager.GetSistemDatabaseStateAsync().ConfigureAwait(false);
                 if (databaseHealty == null)
                 {
                     databaseHealty.HasError = true;
@@ -59,9 +59,9 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             }
         }
 
-        public async Task<(bool isValid, string Message)> ValidateSistemDatabaseAsync(CancellationToken cancellationToken)
+        public async Task<(bool isValid, string Message)> ValidateSistemDatabaseAsync()
         {
-            var result = await GetSistemDatabaseStateAsync(cancellationToken);
+            var result = await GetSistemDatabaseStateAsync();
 
             // Eğer result null gelirse sistemin çökmemesi için (Opsiyonel)
             if (result == null)

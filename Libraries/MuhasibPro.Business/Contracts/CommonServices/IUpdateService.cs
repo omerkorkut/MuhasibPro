@@ -10,7 +10,7 @@ namespace MuhasibPro.Business.Contracts.CommonServices
         Task<UpdateSettingsModel> GetSettingsAsync();
         Task SaveSettingsAsync(UpdateSettingsModel settings);
         Task<UpdateInfo?> CheckForUpdatesAsync(bool includePrereleases = false);
-        Task<bool> DownloadUpdatesAsync(IProgress<int>? progress = null, CancellationToken ct = default);
+        Task<bool> DownloadUpdatesAsync(IProgress<int>? progress = null);
         void ApplyUpdatesAndRestart(params string[] restartArgs);
         void ApplyUpdatesAndRestartWithDatabaseSync(params string[] restartArgs);
         bool IsUpdatePendingRestart { get; }

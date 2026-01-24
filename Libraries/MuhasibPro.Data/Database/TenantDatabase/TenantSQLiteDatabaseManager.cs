@@ -22,7 +22,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             _logger = logger;
         }
 
-        public (bool tenantFileExist, bool tenantDbValid) CheckTenantDatabaseState(string databaseName)
+        private (bool tenantFileExist, bool tenantDbValid) CheckTenantDatabaseState(string databaseName)
         {
             var tenantFileExist = _applicationPaths.TenantDatabaseFileExists(databaseName);
             var tenantDbValid = _applicationPaths.IsTenantDatabaseValid(databaseName);
@@ -30,15 +30,13 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         }
 
         public async Task<DatabaseConnectionAnalysis> GetTenantDatabaseStateAsync(
-            string databaseName,
-            CancellationToken cancellationToken)
+            string databaseName)
         {
             var analysis = new DatabaseConnectionAnalysis();
             try
             {
                 var databaseHealty = await _migrationManager.GetTenantDatabaseStateAsync(
-                    databaseName,
-                    cancellationToken)
+                    databaseName)
                     .ConfigureAwait(false);
                 if (!databaseHealty.IsHealthy)
                 {
@@ -58,8 +56,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         }
 
         public async Task<DatabaseCreatingExecutionResult> CreateNewTenantDatabaseAsync(
-            string databaseName,
-            CancellationToken cancellationToken)
+            string databaseName)
         {
             bool isRollbackNeeded = false;
             var result = new DatabaseCreatingExecutionResult
@@ -73,7 +70,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
 
             try
             {
-                var createResult = await _migrationManager.CreateNewTenantDatabase(databaseName, cancellationToken);
+                var createResult = await _migrationManager.CreateNewTenantDatabase(databaseName);
 
                 // Migration başarısızsa onun result'ını döndür
                 if (!createResult.IsCreatedSuccess)
@@ -82,7 +79,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 }
 
                 // Race condition için bekle
-                await Task.Delay(500, cancellationToken);
+                await Task.Delay(500);
 
                 var tenantdbState = CheckTenantDatabaseState(databaseName);
 
@@ -100,7 +97,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 if (isRollbackNeeded)
                 {
                     result.HasError = true;
-                    var deletingResult = await DeleteTenantDatabase(databaseName, cancellationToken);
+                    var deletingResult = await DeleteTenantDatabase(databaseName);
 
                     if (deletingResult.IsDeletedSuccess)
                     {
@@ -126,11 +123,10 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         }
 
         public async Task<DatabaseMigrationExecutionResult> InitializeTenantDatabaseAsync(
-            string databaseName,
-            CancellationToken cancellationToken)
+            string databaseName)
         {
             var result = new DatabaseMigrationExecutionResult();
-            var validateState = await ValidateTenantDatabaseAsync(databaseName, cancellationToken);
+            var validateState = await ValidateTenantDatabaseAsync(databaseName);
             if (!validateState.isValid)
             {
                 result.HasError = true;
@@ -140,8 +136,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             try
             {
                 var initializeDatabase = await _migrationManager.InitializeTenantDatabaseAsync(
-                    databaseName,
-                    cancellationToken)
+                    databaseName)
                     .ConfigureAwait(false);
                 if (initializeDatabase.HasError)
                 {
@@ -161,8 +156,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         }
 
         public async Task<DatabaseDeletingExecutionResult> DeleteTenantDatabase(
-            string databaseName,
-            CancellationToken cancellationToken)
+            string databaseName)
         {
             var deletingResult = new DatabaseDeletingExecutionResult
             {
@@ -180,7 +174,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             }
             try
             {
-                if (!await _globalDeletionLock.WaitAsync(TimeSpan.FromSeconds(LOCK_TIMEOUT_SECONDS), cancellationToken))
+                if (!await _globalDeletionLock.WaitAsync(TimeSpan.FromSeconds(LOCK_TIMEOUT_SECONDS)))
                 {
                     deletingResult.HasError = true;
                     deletingResult.Message = "🔴 Veritabanı silme işlemi zaman aşımına uğradı. Lütfen tekrar deneyin.";
@@ -192,7 +186,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                     {
                         SqliteConnection.ClearAllPools();
 
-                        await Task.Delay(100 * attempt, cancellationToken); // Bağlantıların kapanması için bekleme süresi
+                        await Task.Delay(100 * attempt); // Bağlantıların kapanması için bekleme süresi
                         var dbPath = _applicationPaths.GetTenantDatabaseFilePath(databaseName);
                         if (File.Exists(dbPath))
                         {
@@ -240,12 +234,20 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         }
 
         public async Task<(bool isValid, string Message)> ValidateTenantDatabaseAsync(
-            string databaseName,
-            CancellationToken cancellationToken)
+            string databaseName)
         {
             try
             {
-                var result = await GetTenantDatabaseStateAsync(databaseName, cancellationToken);
+                var quickTest = CheckTenantDatabaseState(databaseName);
+                if (!quickTest.tenantFileExist)
+                {
+                    return (isValid: false, "Veritabanı dosyası bulunamadı");
+                }
+                if (!quickTest.tenantDbValid)
+                {
+                    return (isValid: false, "Veritabanı dosya boyutu geçersiz.");
+                }
+                var result = await GetTenantDatabaseStateAsync(databaseName);
                 return result?.ToLegacyResult() ?? (false, "Veritabanı durumu alınamadı");
             }
             catch (Exception ex)

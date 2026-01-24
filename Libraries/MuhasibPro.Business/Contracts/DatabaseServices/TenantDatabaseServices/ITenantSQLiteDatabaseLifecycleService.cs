@@ -6,19 +6,14 @@ namespace MuhasibPro.Business.Contracts.DatabaseServices.TenantDatabaseServices
     public interface ITenantSQLiteDatabaseLifecycleService
     {
         Task<ApiDataResponse<DatabaseConnectionAnalysis>> GetTenantDatabaseStateAsync(
-             string databaseName,
-             CancellationToken cancellationToken);
+             string databaseName);
         Task<ApiDataResponse<DatabaseCreatingExecutionResult>> CreateNewTenantDatabaseAsync(
-            string databaseName,
-            CancellationToken cancellationToken);
-        Task<ApiDataResponse<DatabaseMigrationExecutionResult>> InitializeTenantDatabaseAsync(
-            string databaseName,
-            CancellationToken cancellationToken);
+            string databaseName);
+        
         Task<ApiDataResponse<DatabaseDeletingExecutionResult>> DeleteTenantDatabase(
-            string databaseName,
-            CancellationToken cancellationToken);
+            string databaseName);
         ApiDataResponse<string> GenerateDatabaseName(string firmaKodu, int maliYil);
-        Task<(bool isValid, string Message)> ValidateTenantDatabaseAsync(string databaseName, CancellationToken cancellationToken = default);
+        Task<(bool isValid, string Message)> ValidateTenantDatabaseAsync(string databaseName);
         
     }
 }

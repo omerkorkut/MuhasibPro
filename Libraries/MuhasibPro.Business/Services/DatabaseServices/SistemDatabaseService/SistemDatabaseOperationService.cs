@@ -19,14 +19,14 @@ namespace MuhasibPro.Business.Services.DatabaseServices.SistemDatabaseService
             _logservice = logservice;
         }
 
-        public async Task<ApiDataResponse<int>> CleanOldBackupsAsync(int keepLast, CancellationToken cancellationToken = default)
+        public async Task<ApiDataResponse<int>> CleanOldBackupsAsync(int keepLast)
         {
             try
             {
                 // BUSINESS VALIDATION 1: keepLast kontrolü
                 if (keepLast < 1)
                 {
-                    return new ErrorApiDataResponse<int>(
+                    return ApiDataExtensions.ErrorResponse<int>(
                         data: -1,
                         message: "En az 1 yedek dosya korunmalıdır!",
                         resultCount: 0);
@@ -42,7 +42,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.SistemDatabaseService
                        "Veritabanı Yedek Listesi",
                        $"Sistem veritabanı için hiç yedek bulunamadı.",
                        "Sistem veritabanı güvenliği için yedek alınması gerekli.");
-                    return new SuccessApiDataResponse<int>(
+                    return ApiDataExtensions.ErrorResponse<int>(
                         data: 0,
                         message: "Silinecek yedek bulunamadı.",
                         resultCount: 0);
@@ -74,7 +74,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.SistemDatabaseService
                        $"Yedek detayları işlendi",
                        $"{message}");
 
-                    return new SuccessApiDataResponse<int>(
+                    return ApiDataExtensions.SuccessResponse<int>(
                         data: 0,
                         message: message,
                         resultCount: validBackups.Count);
@@ -92,7 +92,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.SistemDatabaseService
                        $"Tahmini boşalan alan: {totalSizeMB}");
                
                 // Data katmanı metodunu çağır
-                var deletedCount = await _backupManager.CleanOldBackupsAsync(keepLast, cancellationToken);
+                var deletedCount = await _backupManager.CleanOldBackupsAsync(keepLast);
 
                 // BUSINESS LOGIC: Sonuç değerlendirme
                 if (deletedCount <= 0)
@@ -148,8 +148,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.SistemDatabaseService
 
 
         public async Task<ApiDataResponse<DatabaseBackupResult>> CreateBackupAsync(
-            DatabaseBackupType backupType,
-            CancellationToken cancellationToken)
+            DatabaseBackupType backupType)
         {
             try
             {
@@ -159,7 +158,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.SistemDatabaseService
                    "İşlem başlatılıyor...",
                    $"Yedekleme Tipi: {backupType}");
 
-                var result = await _backupManager.CreateBackupAsync(backupType, cancellationToken);
+                var result = await _backupManager.CreateBackupAsync(backupType);
 
                 if(result.IsBackupComleted)
                 {
@@ -270,8 +269,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.SistemDatabaseService
         }
 
         public async Task<ApiDataResponse<DatabaseRestoreExecutionResult>> RestoreBackupAsync(
-            string backupFileName,
-            CancellationToken cancellationToken)
+            string backupFileName)
         {
             try
             {
@@ -290,7 +288,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.SistemDatabaseService
                     $"Geri yüklenmesi beklenen yedek dosyası: {backupFileName}");
 
 
-                var result = await _backupManager.RestoreBackupAsync(backupFileName, cancellationToken);
+                var result = await _backupManager.RestoreBackupAsync(backupFileName);
 
                 if(result.IsRestoreSuccess)
                 {
@@ -330,7 +328,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.SistemDatabaseService
             }
         }
 
-        public async Task<ApiDataResponse<bool>> RestoreFromLatestBackupAsync(CancellationToken cancellationToken)
+        public async Task<ApiDataResponse<bool>> RestoreFromLatestBackupAsync()
         {
             try
             {
@@ -339,7 +337,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.SistemDatabaseService
                     "Veritabanını Yedekten Geri Yükleme",
                     "⏳ Geri yükleme işlemi başlatılıyor.",
                     "Sistem veritabanı son yedeği ile değiştirilecek!");
-                var result = await _backupManager.RestoreFromLatestBackupAsync(cancellationToken);
+                var result = await _backupManager.RestoreFromLatestBackupAsync();
                 if(result)
                 {
                     await _logservice.SistemLogInformationAsync(

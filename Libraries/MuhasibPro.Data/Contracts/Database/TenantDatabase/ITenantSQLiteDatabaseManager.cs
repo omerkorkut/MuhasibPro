@@ -5,21 +5,15 @@ namespace MuhasibPro.Data.Contracts.Database.TenantDatabase
     public interface ITenantSQLiteDatabaseManager
     {
         Task<DatabaseConnectionAnalysis> GetTenantDatabaseStateAsync(
-             string databaseName,
-             CancellationToken cancellationToken);
+             string databaseName);
         Task<DatabaseCreatingExecutionResult> CreateNewTenantDatabaseAsync(
-            string databaseName,
-            CancellationToken cancellationToken);
+            string databaseName);
         Task<DatabaseMigrationExecutionResult> InitializeTenantDatabaseAsync(
-            string databaseName,
-            CancellationToken cancellationToken);
+            string databaseName);
         Task<DatabaseDeletingExecutionResult> DeleteTenantDatabase(
-            string databaseName,
-            CancellationToken cancellationToken);
+            string databaseName);
         Task<(bool isValid, string Message)> ValidateTenantDatabaseAsync(
-            string databaseName,
-            CancellationToken cancellationToken);
-        (bool tenantFileExist, bool tenantDbValid) CheckTenantDatabaseState(string databaseName);
+            string databaseName);   
 
 
     }

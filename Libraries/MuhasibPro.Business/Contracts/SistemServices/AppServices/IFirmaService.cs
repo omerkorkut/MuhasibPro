@@ -15,9 +15,9 @@ namespace MuhasibPro.Business.Contracts.SistemServices.AppServices
         Task<bool> IsFirmaAnyAsync();
         Task<ApiDataResponse<int>> GetFirmalarCountAsync(DataRequest<Firma> request);
         Task<ApiDataResponse<IList<FirmaModel>>> GetFirmalarWithUserId(DataRequest<Firma> request, long userId);
-        Task<ApiDataResponse<int>> UpdateFirmaAsync(FirmaModel model,CancellationToken cancellationToken);
-        Task<ApiDataResponse<int>> DeleteFirmaAsync(long firmaId,CancellationToken cancellationToken);
-        Task<ApiDataResponse<int>> DeleteFirmaRangeAsync(int index, int length, DataRequest<Firma> request,CancellationToken cancellationToken);
+        Task<ApiDataResponse<int>> UpdateFirmaAsync(FirmaModel model);
+        Task<ApiDataResponse<int>> DeleteFirmaAsync(long firmaId);
+        Task<ApiDataResponse<int>> DeleteFirmaRangeAsync(int index, int length, DataRequest<Firma> request);
         Task<ApiDataResponse<IList<FirmaModel>>> GetFirmalarWithMaliDonemler(DataRequest<Firma> request);
 
     }

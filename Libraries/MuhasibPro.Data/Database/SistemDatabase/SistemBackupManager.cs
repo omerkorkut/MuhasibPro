@@ -31,8 +31,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
         }
 
         public async Task<DatabaseBackupResult> CreateBackupAsync(
-            DatabaseBackupType backupType,
-            CancellationToken cancellationToken)
+            DatabaseBackupType backupType)
         {
             var result = new DatabaseBackupResult
             {
@@ -59,7 +58,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 try
                 {
                     // 1. WAL checkpoint
-                    await _backupManager.ExecuteWalCheckpointAsync(sourceFilePath, _databaseName, cancellationToken);
+                    await _backupManager.ExecuteWalCheckpointAsync(sourceFilePath, _databaseName);
                     // 2. WAL dosyalarını temizle
                     _backupManager.CleanupSqliteWalFiles(sourceFilePath);
                 }
@@ -78,8 +77,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 // 4. Backup al
                 try
                 {
-                    await _backupManager.SafeFileCopyAsync(sourceFilePath, backupPath, cancellationToken).ConfigureAwait(false);
-                    cancellationToken.ThrowIfCancellationRequested();
+                    await _backupManager.SafeFileCopyAsync(sourceFilePath, backupPath).ConfigureAwait(false);
+                   
 
                     result.Message = "➕ Yedekleme işlemi başlatıldı...";
                     // 5. DOĞRULAMA
@@ -106,12 +105,12 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                         return result;
                     }
                 }
-                catch (OperationCanceledException ex)
+                catch (Exception ex)
                 {
                     // 6. Hata
-                    _logger.LogInformation(ex, "Yedekleme iptal edildi.");
+                    _logger.LogInformation(ex, "Bilinmeyen Hata.");
                     result.IsBackupComleted = false;
-                    result.Message = "⏹️ Yedekleme iptal edildi!";
+                    result.Message = "⏹️ Bilinmeyen Hata";
                     return result;
                 }
 
@@ -129,7 +128,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             }
         }
 
-        public async Task<bool> RestoreFromLatestBackupAsync(CancellationToken cancellationToken)
+        public async Task<bool> RestoreFromLatestBackupAsync()
         {
             // 1. Tüm backup'ları listele
             var backups = await GetBackupsAsync();
@@ -149,7 +148,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 return false;
 
             // 4. O backup'ı geri yükle
-            var restoreBackup = await RestoreBackupDetailsAsync(latestBackup.BackupFileName, cancellationToken);
+            var restoreBackup = await RestoreBackupDetailsAsync(latestBackup.BackupFileName);
             if (restoreBackup.IsRestoreSuccess)
                 return true;
             return false;
@@ -233,12 +232,12 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             }
         }
 
-        public async Task<DatabaseRestoreExecutionResult> RestoreBackupAsync(string backupFileName, CancellationToken cancellationToken)
+        public async Task<DatabaseRestoreExecutionResult> RestoreBackupAsync(string backupFileName)
         {
             var restore = new DatabaseRestoreExecutionResult();
             try
             {
-                var restoreResult = await RestoreBackupDetailsAsync(backupFileName, cancellationToken);
+                var restoreResult = await RestoreBackupDetailsAsync(backupFileName);
                 if(restoreResult.IsRestoreSuccess)
                     return restoreResult;
                 return restore;
@@ -251,8 +250,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
         }
 
         private async Task<DatabaseRestoreExecutionResult> RestoreBackupDetailsAsync(
-            string backupFileName,
-            CancellationToken cancellationToken)
+            string backupFileName)
         {
             var result = new DatabaseRestoreExecutionResult
             {
@@ -281,9 +279,9 @@ namespace MuhasibPro.Data.Database.SistemDatabase
 
                 // 2. CLEAR CONNECTION POOLS
                 Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-                await Task.Delay(BACKUP_DELAY_MS * 2, cancellationToken).ConfigureAwait(false);
+                await Task.Delay(BACKUP_DELAY_MS * 2).ConfigureAwait(false);
 
-                cancellationToken.ThrowIfCancellationRequested();
+                
 
                 // 3. CREATE SAFETY BACKUP (ROLLBACK için)
                 if (File.Exists(targetPath))
@@ -295,8 +293,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
 
                     safetyBackupPath = Path.Combine(backupDir, safetyBackupName);
 
-                    await _backupManager.ExecuteWalCheckpointAsync(targetPath, _databaseName, cancellationToken);
-                    await _backupManager.SafeFileCopyAsync(targetPath, safetyBackupPath, cancellationToken);
+                    await _backupManager.ExecuteWalCheckpointAsync(targetPath, _databaseName);
+                    await _backupManager.SafeFileCopyAsync(targetPath, safetyBackupPath);
 
                     _logger?.LogInformation("Güvenlik yedeği alındı: {SafetyBackup}", safetyBackupName);
                 }
@@ -305,8 +303,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 tempRestorePath = targetPath + ".restoring_" + Guid.NewGuid().ToString("N").Substring(0, 8);
 
                 // 4a. Backup'ı TEMP dosyasına kopyala
-                await _backupManager.SafeFileCopyAsync(backupPath, tempRestorePath, cancellationToken).ConfigureAwait(false);
-                cancellationToken.ThrowIfCancellationRequested();
+                await _backupManager.SafeFileCopyAsync(backupPath, tempRestorePath).ConfigureAwait(false);
+               
 
                 // 4b. TEMP dosyasını doğrula
                 _backupManager.CleanupSqliteWalFiles(tempRestorePath);
@@ -354,7 +352,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 if (!_applicationPaths.IsSqliteDatabaseFileValid(targetPath))
                 {
                     // ROLLBACK safety backup'a
-                    await RollbackToSafetyBackupAsync(targetPath, safetyBackupPath, cancellationToken);
+                    await RollbackToSafetyBackupAsync(targetPath, safetyBackupPath);
 
                     result.HasError = true;
                     result.Message = "Restore sonrası doğrulama başarısız, safety backup'a geri dönüldü.";
@@ -389,7 +387,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 try
                 {
                     var targetPath = _applicationPaths.GetSistemDatabaseFilePath();
-                    await RollbackToSafetyBackupAsync(targetPath, safetyBackupPath, cancellationToken).ConfigureAwait(false);
+                    await RollbackToSafetyBackupAsync(targetPath, safetyBackupPath).ConfigureAwait(false);
                 }
                 catch (Exception rollbackEx)
                 {
@@ -418,8 +416,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
 
         private async Task<bool> RollbackToSafetyBackupAsync(
             string targetPath,
-            string safetyBackupPath,
-            CancellationToken ct)
+            string safetyBackupPath)
         {
             if (safetyBackupPath == null || !File.Exists(safetyBackupPath))
                 return false;
@@ -429,12 +426,12 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 _logger?.LogWarning("Restore başarısız, safety backup'a geri dönülüyor...");
 
                 Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-                await Task.Delay(BACKUP_DELAY_MS, ct).ConfigureAwait(false);
+                await Task.Delay(BACKUP_DELAY_MS).ConfigureAwait(false);
 
                 if (File.Exists(targetPath))
                     File.Delete(targetPath);
 
-                await _backupManager.SafeFileCopyAsync(safetyBackupPath, targetPath, ct);
+                await _backupManager.SafeFileCopyAsync(safetyBackupPath, targetPath);
                 _backupManager.CleanupSqliteWalFiles(targetPath);
 
                 _logger?.LogInformation("Safety backup'a başarıyla geri dönüldü.");
@@ -457,12 +454,12 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             }
         }
 
-        public async Task<int> CleanOldBackupsAsync(int keepLast, CancellationToken cancellationToken = default)
+        public async Task<int> CleanOldBackupsAsync(int keepLast)
         {
             try
             {
                 var backupDir = _applicationPaths.GetBackupFolderPath();
-                return await _backupManager.CleanOldBackupsAsync(backupDir, _databaseName, keepLast, cancellationToken);
+                return await _backupManager.CleanOldBackupsAsync(backupDir, _databaseName, keepLast);
             }
             catch (Exception ex)
             {

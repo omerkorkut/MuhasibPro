@@ -6,11 +6,13 @@ namespace MuhasibPro.Business.Contracts.DatabaseServices.TenantDatabaseServices
 {
     public interface ITenantSQLiteDatabaseOperationService
     {
-        Task<ApiDataResponse<DatabaseBackupResult>> CreateBackupAsync(string databaseName, DatabaseBackupType backupType, CancellationToken cancellationToken=default);
-        Task<ApiDataResponse<DatabaseRestoreExecutionResult>> RestoreBackupAsync(string databaseName, string backupFilePath, CancellationToken cancellationToken);
+        Task<ApiDataResponse<DatabaseBackupResult>> CreateBackupAsync(string databaseName, DatabaseBackupType backupType);
+        Task<ApiDataResponse<DatabaseRestoreExecutionResult>> RestoreBackupAsync(string databaseName, string backupFilePath);
         Task<ApiDataResponse<List<DatabaseBackupResult>>> GetBackupHistoryAsync(string databaseName);
-        Task<ApiDataResponse<bool>> RestoreFromLatestBackupAsync(string databaseName, CancellationToken cancellationToken);
+        Task<ApiDataResponse<bool>> RestoreFromLatestBackupAsync(string databaseName);
         DateTime? GetLastBackupDate(string databaseName);
-        Task<ApiDataResponse<int>> CleanOldBackupsAsync(string databaseName, int keepLast, CancellationToken cancellationToken = default);
+        Task<ApiDataResponse<int>> CleanOldBackupsAsync(string databaseName, int keepLast);
+        Task<DatabaseDeletingExecutionResult> DeleteBackupDatabaseAsync(
+        string databaseName);
     }
 }

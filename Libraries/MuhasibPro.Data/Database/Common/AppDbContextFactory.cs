@@ -59,7 +59,7 @@ namespace MuhasibPro.Data.Database.Common
             return optionsBuilder.Options;
         }
 
-        public async Task<(bool canConnect, string message)> TestDbContextConnectionAsync(string databaseName, CancellationToken cancellationToken = default)
+        public async Task<(bool canConnect, string message)> TestDbContextConnectionAsync(string databaseName)
         {
             // 2. File check
             var dbPath = GetTenantDatabaseFilePath(databaseName);
@@ -76,14 +76,14 @@ namespace MuhasibPro.Data.Database.Common
             }
             try
             {
-                var connectionStringResult = await _connectionStringFactory.ValidateConnectionStringAsync(databaseName, cancellationToken);
+                var connectionStringResult = await _connectionStringFactory.ValidateConnectionStringAsync(databaseName);
 
                 if (!connectionStringResult.canConnect)
                 {
                     return (false, $"Bağlantı hatası: {connectionStringResult.message}");
                 }
                 using var context = CreateDbContext(databaseName);
-                var canConnect = await context.Database.CanConnectAsync(cancellationToken);
+                var canConnect = await context.Database.CanConnectAsync();
                 if (!canConnect)
                 {
                     _logger?.LogWarning("Veritabanı ile bağlantı kurulamadı: {DatabaseName}", databaseName);

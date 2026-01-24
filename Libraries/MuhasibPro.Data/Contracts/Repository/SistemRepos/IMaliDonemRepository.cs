@@ -15,6 +15,7 @@ namespace MuhasibPro.Data.Contracts.Repository.SistemRepos
         Task<bool> IsMaliDonemAnyAsync();
         Task DeleteMaliDonemlerAsync(params MaliDonem[] maliDonemler);
         Task UpdateMaliDonemAsync(MaliDonem maliDonem);
+        Task RestoreMaliDonemAsync(MaliDonem maliDonem);
 
 
     }

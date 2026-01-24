@@ -19,12 +19,12 @@ namespace MuhasibPro.Business.Services.DatabaseServices.SistemDatabaseService
             _logService = logService;
         }
 
-        public async Task<ApiDataResponse<DatabaseConnectionAnalysis>> GetSistemDatabaseStateAsync(CancellationToken cancellationToken=default)
+        public async Task<ApiDataResponse<DatabaseConnectionAnalysis>> GetSistemDatabaseStateAsync()
         {
             var analysis = new DatabaseConnectionAnalysis();
             try
             {
-                var analysisResult = await _databaseManager.GetSistemDatabaseStateAsync(cancellationToken);
+                var analysisResult = await _databaseManager.GetSistemDatabaseStateAsync();
                 if (analysisResult == null) 
                 {
                     return new ErrorApiDataResponse<DatabaseConnectionAnalysis>(data: analysis,message:"Sistem veritabanı analiz edilemedi");
@@ -46,14 +46,14 @@ namespace MuhasibPro.Business.Services.DatabaseServices.SistemDatabaseService
 
     
 
-        public async Task<(bool intializeState, string message)> InitializeSistemDatabaseAsync(CancellationToken cancellationToken=default)
+        public async Task<(bool intializeState, string message)> InitializeSistemDatabaseAsync()
         {
-            return await _databaseManager.InitializeSistemDatabaseAsync(cancellationToken);
+            return await _databaseManager.InitializeSistemDatabaseAsync();
         }
 
-        public async Task<(bool isValid, string Message)> ValidateSistemDatabaseAsync(CancellationToken cancellationToken=default)
+        public async Task<(bool isValid, string Message)> ValidateSistemDatabaseAsync()
         {
-            return await _databaseManager.ValidateSistemDatabaseAsync(cancellationToken);
+            return await _databaseManager.ValidateSistemDatabaseAsync();
         }
     }
 }

@@ -51,29 +51,28 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         public TenantContext GetCurrentTenant() => _currentTenant;
 
         public async Task<TenantContext> SwitchToTenantAsync(
-            string databaseName,
-            CancellationToken cancellationToken = default)
+            string databaseName)
         {
             if(string.IsNullOrWhiteSpace(databaseName))
                 throw new ArgumentException("Database name required", nameof(databaseName));
 
             ThrowIfDisposed();
 
-            await _tenantSemaphore.WaitAsync(cancellationToken);
+            await _tenantSemaphore.WaitAsync();
             try
             {
-                return await SwitchToTenantCoreAsync(databaseName, cancellationToken);
+                return await SwitchToTenantCoreAsync(databaseName);
             } finally
             {
                 _tenantSemaphore.Release();
             }
         }
 
-        public async Task ClearCurrentTenantAsync(CancellationToken cancellationToken = default)
+        public async Task ClearCurrentTenantAsync()
         {
             ThrowIfDisposed();
 
-            await _tenantSemaphore.WaitAsync(cancellationToken);
+            await _tenantSemaphore.WaitAsync();
             try
             {
                 var oldTenant = _currentTenant;
@@ -92,8 +91,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
 
         #region Core Logic
         private async Task<TenantContext> SwitchToTenantCoreAsync(
-            string databaseName,
-            CancellationToken cancellationToken)
+            string databaseName)
         {
             // 1. Check if already current
             if(_currentTenant.DatabaseName == databaseName && _currentTenant.IsLoaded)
@@ -105,8 +103,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
 
             // 2. Test connection
             var connectionResult = await _connectionStringFactory.ValidateConnectionStringAsync(
-                databaseName,
-                cancellationToken);
+                databaseName);
 
             if(!connectionResult.canConnect)
             {

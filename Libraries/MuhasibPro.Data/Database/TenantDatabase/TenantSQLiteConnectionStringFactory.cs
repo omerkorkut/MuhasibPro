@@ -65,7 +65,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         /// <summary>
         /// SQLite bağlantısını test eder
         /// </summary>
-        public async Task<(bool canConnect, string message, string connectionString)> ValidateConnectionStringAsync(string databaseName, CancellationToken cancellationToken = default)
+        public async Task<(bool canConnect, string message, string connectionString)> ValidateConnectionStringAsync(string databaseName)
         {
             // 2. File check
             var dbPath = _applicationPaths.GetTenantDatabaseFilePath(databaseName);
@@ -78,12 +78,12 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 var connectionString = CreateConnectionString(databaseName);
 
                 await using var connection = new SqliteConnection(connectionString);
-                await connection.OpenAsync(cancellationToken);
+                await connection.OpenAsync();
 
                 // Basit bir test sorgusu
                 await using var command = connection.CreateCommand();
                 command.CommandText = "SELECT 1";
-                var result = await command.ExecuteScalarAsync(cancellationToken);
+                var result = await command.ExecuteScalarAsync();
                 if (result?.ToString() != "1")
                 {
                     return (false, "🔴 Bağlantı yanıt vermiyor!", string.Empty);

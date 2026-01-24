@@ -15,9 +15,8 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
 
         public async Task<T> ExecuteStepAsync<T>(
        string stepName,
-       Func<CancellationToken, Task<T>> action,
-       Func<T, CancellationToken, Task> compensate,
-       CancellationToken cancellationToken = default)
+       Func<Task<T>> action,
+       Func<T, Task> compensate)
         {
             T result = default;
             SagaStep sagaStep = null;
@@ -32,14 +31,14 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
                     StepName = stepName
                 };
 
-                result = await action(cancellationToken);
+                result = await action();
 
                 // ⭐ Compensate'i BAŞARILI OLDUKTAN SONRA oluştur
                 // (result artık biliniyor)
                 if (compensate != null)
                 {
                     sagaStep.CompensateAction = async () =>
-                        await compensate(result, cancellationToken);
+                        await compensate(result);
                 }
 
                 sagaStep.Result = result;
@@ -53,11 +52,7 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
                 _logger.LogInformation("Saga Step tamamlandı: {StepName}", stepName);
                 return result;
             }
-            catch (OperationCanceledException)
-            {
-                _logger.LogWarning("Saga step iptal edildi: {StepName}", stepName);
-                throw;
-            }
+          
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Saga Step başarısız: {StepName}", stepName);
@@ -68,7 +63,7 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
             }
         }
 
-        public async Task CompensateAllAsync(CancellationToken cancellationToken)
+        public async Task CompensateAllAsync()
         {
             List<SagaStep> stepsToCompensate;
 
@@ -107,7 +102,7 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
 
                 try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    
 
                     _logger.LogInformation(
                         "[{Completed}/{Total}] Compensating: {StepName}",
@@ -118,14 +113,7 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
                     _logger.LogInformation(
                         "[{Completed}/{Total}] Compensated: {StepName}",
                         completed, totalSteps, step.StepName);
-                }
-                catch (OperationCanceledException)
-                {
-                    _logger.LogWarning(
-                        "[{Completed}/{Total}] Compensation iptal edildi: {StepName}",
-                        completed, totalSteps, step.StepName);
-                    throw; // ⭐ Yukarıya fırlat, diğerlerini durdur
-                }
+                }                
                 catch (Exception ex)
                 {
                     _logger.LogError(

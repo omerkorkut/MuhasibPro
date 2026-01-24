@@ -6,11 +6,11 @@ namespace MuhasibPro.Business.Contracts.DatabaseServices.SistemDatabaseServices
 {
     public interface ISistemDatabaseOperationService
     {
-        Task<ApiDataResponse<DatabaseBackupResult>> CreateBackupAsync(DatabaseBackupType backupType, CancellationToken cancellationToken);
-        Task<ApiDataResponse<DatabaseRestoreExecutionResult>> RestoreBackupAsync(string backupFilePath, CancellationToken cancellationToken);
+        Task<ApiDataResponse<DatabaseBackupResult>> CreateBackupAsync(DatabaseBackupType backupType);
+        Task<ApiDataResponse<DatabaseRestoreExecutionResult>> RestoreBackupAsync(string backupFilePath);
         Task<ApiDataResponse<List<DatabaseBackupResult>>> GetBackupHistoryAsync();
-        Task<ApiDataResponse<bool>> RestoreFromLatestBackupAsync(CancellationToken cancellationToken);
+        Task<ApiDataResponse<bool>> RestoreFromLatestBackupAsync();
         DateTime? GetLastBackupDate();
-        Task<ApiDataResponse<int>> CleanOldBackupsAsync(int keepLast, CancellationToken cancellationToken = default);
+        Task<ApiDataResponse<int>> CleanOldBackupsAsync(int keepLast);
     }
 }

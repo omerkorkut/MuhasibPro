@@ -43,8 +43,7 @@ namespace MuhasibPro.Data.Database.Common
 
         public async Task ExecuteWalCheckpointAsync(
             string dbFilePath,
-            string databaseName,
-            CancellationToken cancellationToken)
+            string databaseName)
         {
             if (!File.Exists(dbFilePath))
                 return;
@@ -52,11 +51,11 @@ namespace MuhasibPro.Data.Database.Common
             try
             {
                 await using var connection = new SqliteConnection($"Data Source={dbFilePath};Pooling=False");
-                await connection.OpenAsync(cancellationToken);
+                await connection.OpenAsync();
 
                 await using var command = connection.CreateCommand();
                 command.CommandText = "PRAGMA wal_checkpoint(TRUNCATE);";
-                await command.ExecuteScalarAsync(cancellationToken);
+                await command.ExecuteScalarAsync();
 
                 _logger?.LogDebug("WAL checkpoint tamamlandı: {Database}", databaseName);
             }
@@ -69,8 +68,7 @@ namespace MuhasibPro.Data.Database.Common
         public async Task<DatabaseRestoreExecutionResult> ExecuteRestoreAsync(
             string databaseName,
             string backupSourcePath,
-            string targetDbPath,
-            CancellationToken ct)
+            string targetDbPath)
         {
             var result = new DatabaseRestoreExecutionResult
             {
@@ -92,11 +90,11 @@ namespace MuhasibPro.Data.Database.Common
 
                 // 2. TÜM BAĞLANTILARI ZORLA KAPAT
                 SqliteConnection.ClearAllPools();
-                await Task.Delay(200, ct);
+                await Task.Delay(200);
 
                 // ⭐⭐ KRİTİK: RESTORE ÖNCESİ ÇİFT LOCK
-                using (await AcquireFileLockAsync(backupSourcePath, TimeSpan.FromSeconds(10), ct))
-                using (await AcquireFileLockAsync(targetDbPath, TimeSpan.FromSeconds(10), ct))
+                using (await AcquireFileLockAsync(backupSourcePath, TimeSpan.FromSeconds(10)))
+                using (await AcquireFileLockAsync(targetDbPath, TimeSpan.FromSeconds(10)))
                 {
                     // 3. MEVCUT DOSYAYI KORUMAYA AL (Artık GÜVENLİ)
                     if (File.Exists(targetDbPath))
@@ -108,7 +106,7 @@ namespace MuhasibPro.Data.Database.Common
                     // 4. RESTORE İŞLEMİ (locksuz kopyala - zaten lock'lar elimizde)
                     try
                     {
-                        await SafeFileCopyAsync(backupSourcePath, targetDbPath, ct);
+                        await SafeFileCopyAsync(backupSourcePath, targetDbPath);
 
                         // 5. DOĞRULAMA
                         if (IsValidBackupFile(Path.GetDirectoryName(targetDbPath), Path.GetFileName(targetDbPath)))
@@ -146,14 +144,14 @@ namespace MuhasibPro.Data.Database.Common
             return result;
         }
 
-        public async Task SafeFileCopyWithLockAsync(string source, string dest, CancellationToken cancellationToken)
+        public async Task SafeFileCopyWithLockAsync(string source, string dest)
         {
-            using (await AcquireFileLockAsync(source, TimeSpan.FromSeconds(10), cancellationToken))
+            using (await AcquireFileLockAsync(source, TimeSpan.FromSeconds(10)))
             {
-                await SafeFileCopyAsync(source, dest, cancellationToken);
+                await SafeFileCopyAsync(source, dest);
             }
         }
-        public async Task SafeFileCopyAsync(string source, string dest, CancellationToken cancellationToken)
+        public async Task SafeFileCopyAsync(string source, string dest)
         {
             // === BAŞINA BU 5 SATIRI EKLEYİN ===
             if (string.Equals(source, dest, StringComparison.OrdinalIgnoreCase))
@@ -184,7 +182,7 @@ namespace MuhasibPro.Data.Database.Common
 
             try
             {
-                await TryReleaseFileLocksAsync(source, cancellationToken);
+                await TryReleaseFileLocksAsync(source);
 
                 var buffer = ArrayPool<byte>.Shared.Rent(BUFFER_SIZE);
                 try
@@ -206,12 +204,12 @@ namespace MuhasibPro.Data.Database.Common
                         FileOptions.Asynchronous);
 
                     int bytesRead;
-                    while ((bytesRead = await sourceStream.ReadAsync(buffer, cancellationToken)) > 0)
+                    while ((bytesRead = await sourceStream.ReadAsync(buffer)) > 0)
                     {
-                        await tempStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                        await tempStream.WriteAsync(buffer.AsMemory(0, bytesRead));
                     }
 
-                    await tempStream.FlushAsync(cancellationToken);
+                    await tempStream.FlushAsync();
                 }
                 finally
                 {
@@ -234,13 +232,13 @@ namespace MuhasibPro.Data.Database.Common
 
         }
 
-        private async Task TryReleaseFileLocksAsync(string filePath, CancellationToken cancellationToken)
+        private async Task TryReleaseFileLocksAsync(string filePath)
         {
             try
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
-                await Task.Delay(LOCK_RETRY_DELAY, cancellationToken);
+                await Task.Delay(LOCK_RETRY_DELAY);
 
                 try
                 {
@@ -254,13 +252,13 @@ namespace MuhasibPro.Data.Database.Common
                 }
                 catch (IOException)
                 {
-                    await Task.Delay(LOCK_RETRY_DELAY * 2, cancellationToken);
+                    await Task.Delay(LOCK_RETRY_DELAY * 2);
                 }
             }
             catch
             {
                 SqliteConnection.ClearAllPools();
-                await Task.Delay(100, cancellationToken);
+                await Task.Delay(100);
             }
         }
 
@@ -287,8 +285,7 @@ namespace MuhasibPro.Data.Database.Common
         public async Task<int> CleanOldBackupsAsync(
             string backupDir,
             string databaseName,
-            int keepLast,
-            CancellationToken cancellationToken = default)
+            int keepLast)
         {
             if (!Directory.Exists(backupDir))
                 return 0;
@@ -306,7 +303,7 @@ namespace MuhasibPro.Data.Database.Common
                     {
                         try
                         {
-                            await Task.Run(() => file.Delete(), cancellationToken);
+                            await Task.Run(() => file.Delete());
                             return 1;
                         }
                         catch
@@ -340,7 +337,7 @@ namespace MuhasibPro.Data.Database.Common
             }
         }
 
-        private async Task<IDisposable> AcquireFileLockAsync(string filePath, TimeSpan timeout, CancellationToken ct)
+        private async Task<IDisposable> AcquireFileLockAsync(string filePath, TimeSpan timeout)
         {
             var lockFile = $"{filePath}.lock";
             var start = DateTime.UtcNow;
@@ -361,7 +358,7 @@ namespace MuhasibPro.Data.Database.Common
                 }
                 catch (IOException)
                 {
-                    await Task.Delay(100, ct);
+                    await Task.Delay(100);
                 }
             }
 

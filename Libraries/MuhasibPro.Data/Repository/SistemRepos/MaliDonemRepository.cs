@@ -5,7 +5,6 @@ using MuhasibPro.Data.Repository.Common.BaseRepo;
 using MuhasibPro.Domain.Common;
 using MuhasibPro.Domain.Entities.SistemEntity;
 using MuhasibPro.Domain.Utilities.UIDGenerator;
-using System.Collections.Generic;
 
 namespace MuhasibPro.Data.Repository.SistemRepos
 {
@@ -87,6 +86,7 @@ namespace MuhasibPro.Data.Repository.SistemRepos
 
         public async Task UpdateMaliDonemAsync(MaliDonem maliDonem)
         {
+           
             if (maliDonem.Id > 0)
             {
                 maliDonem.GuncellemeTarihi = DateTime.UtcNow;
@@ -99,6 +99,14 @@ namespace MuhasibPro.Data.Repository.SistemRepos
                 await AddAsync(maliDonem);
             }
             maliDonem.ArananTerim = maliDonem.BuildSearchTerms();
+        }
+        public async Task RestoreMaliDonemAsync(MaliDonem maliDonem)
+        {
+            if (maliDonem.Id > 0)
+            {
+                maliDonem.GuncellemeTarihi= DateTime.UtcNow;
+                await AddAsync(maliDonem);
+            }
         }
     }
 }

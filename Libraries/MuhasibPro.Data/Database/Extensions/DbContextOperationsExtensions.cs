@@ -15,7 +15,7 @@ namespace MuhasibPro.Data.Database.Extensions
         /// <param name="databaseName">Database adı (loglama için)</param>
         /// <param name="tablesToCheck">Kontrol edilecek tablo listesi</param>
         /// <param name="logger">Opsiyonel logger</param>
-        /// <param name="ct">CancellationToken</param>
+       
         /// <returns>Database analiz sonucu</returns>
         /// <remarks>
         /// Bu metod sadece okuma yapar, herhangi bir değişiklik yapmaz. Integrity check, bağlantı testi ve migration
@@ -27,8 +27,7 @@ namespace MuhasibPro.Data.Database.Extensions
             bool isDatabaseExists,
             bool databaseValid,
             string[] tablesToCheck,
-            ILogger logger = null,
-            CancellationToken ct = default)
+            ILogger logger = null)
         {
             var analysis = new DatabaseConnectionAnalysis
             {
@@ -52,7 +51,7 @@ namespace MuhasibPro.Data.Database.Extensions
                     // SQLite'ın dahili bütünlük kontrolü (Hızlıdır)
                     var integrity = await context.Database
                         .SqlQueryRaw<string>("PRAGMA integrity_check")
-                        .FirstOrDefaultAsync(ct)
+                        .FirstOrDefaultAsync()
                         .ConfigureAwait(false);
                     if (integrity?.ToLower() != "ok")
                     {
@@ -63,7 +62,7 @@ namespace MuhasibPro.Data.Database.Extensions
                 }
                 // 1. CONNECTION TEST
 
-                analysis.CanConnect = await context.Database.CanConnectAsync(ct).ConfigureAwait(false);
+                analysis.CanConnect = await context.Database.CanConnectAsync().ConfigureAwait(false);
                 if (!analysis.CanConnect)
                 {
                     logger?.LogDebug("Database'e bağlanılamadı: {Database}", databaseName);
@@ -78,11 +77,11 @@ namespace MuhasibPro.Data.Database.Extensions
                     if (!IsValidTableName(tableName))
                         continue;
 
-                    if (await TableExistsAsync(context, tableName, ct).ConfigureAwait(false))
+                    if (await TableExistsAsync(context, tableName).ConfigureAwait(false))
                     {
                         existingTableCount++;
                         // Sadece bir tabloda bile veri olması, yedek alınması için yeterlidir.
-                        if (!hasActualData && await TableHasRowsSafeAsync(context, tableName, ct).ConfigureAwait(false))
+                        if (!hasActualData && await TableHasRowsSafeAsync(context, tableName).ConfigureAwait(false))
                         {
                             hasActualData = true;
                         }
@@ -94,8 +93,8 @@ namespace MuhasibPro.Data.Database.Extensions
                 analysis.IsEmptyDatabase = existingTableCount == 0 || !hasActualData;
 
                 // 3. MIGRATION ANALYSIS
-                var applied = (await context.Database.GetAppliedMigrationsAsync(ct).ConfigureAwait(false)).ToList();
-                var pending = (await context.Database.GetPendingMigrationsAsync(ct).ConfigureAwait(false)).ToList();
+                var applied = (await context.Database.GetAppliedMigrationsAsync().ConfigureAwait(false)).ToList();
+                var pending = (await context.Database.GetPendingMigrationsAsync().ConfigureAwait(false)).ToList();
 
                 analysis.PendingMigrations = pending;
                 analysis.AppliedMigrationsCount = applied.Count;
@@ -123,7 +122,7 @@ namespace MuhasibPro.Data.Database.Extensions
         /// // WRITE OPERATION - migration uygula var result = await dbContext.ExecuteMigrationsWithBackupCheckAsync(
         /// databaseName: "SistemDB", tablesToCheck: new[] { "Kullanicilar", "AppDbVersiyonlar" }, backupAction: async
         /// () => await _backupManager.CreateBackupAsync(ct), logger: _logger, commandTimeoutMinutes: 10,
-        /// cancellationToken: ct);
+       
         /// </summary>
         public static async Task<DatabaseMigrationExecutionResult> ExecuteMigrationsWithBackupCheckAsync(
             this DbContext context,
@@ -134,8 +133,7 @@ namespace MuhasibPro.Data.Database.Extensions
             Func<Task<bool>> restoreAction = null,
             Func<Task<bool>> backupAction = null,
             ILogger logger = null,
-            int commandTimeoutMinutes = 5,
-            CancellationToken ct = default)
+            int commandTimeoutMinutes = 5)
         {
             var result = new DatabaseMigrationExecutionResult
             {
@@ -153,8 +151,7 @@ namespace MuhasibPro.Data.Database.Extensions
                     isDatabaseExists,
                     databaseValid,
                     tablesToCheck,
-                    logger,
-                    ct).ConfigureAwait(false);
+                    logger).ConfigureAwait(false);
                 if (!analysis.IsDatabaseExists)
                 {
                     result.HasError = true;
@@ -196,7 +193,7 @@ namespace MuhasibPro.Data.Database.Extensions
                         catch
                         {
                             retryCount++;
-                            await Task.Delay(1000, ct); // 1 saniye bekle
+                            await Task.Delay(1000); // 1 saniye bekle
                         }
                     }
 
@@ -221,7 +218,7 @@ namespace MuhasibPro.Data.Database.Extensions
                         catch
                         {
                             retryCount++;
-                            await Task.Delay(1000, ct); // 1 saniye bekle
+                            await Task.Delay(1000); // 1 saniye bekle
                         }
                     }
 
@@ -234,7 +231,7 @@ namespace MuhasibPro.Data.Database.Extensions
 
                 // 4. MIGRATION UYGULA
                 context.Database.SetCommandTimeout(TimeSpan.FromMinutes(commandTimeoutMinutes));
-                await context.Database.MigrateAsync(ct).ConfigureAwait(false);
+                await context.Database.MigrateAsync().ConfigureAwait(false);
 
                 // 5. SON DURUMU KONTROL ET
                 var finalAnalysis = await context.GetConnectionFullStateAsync(
@@ -242,8 +239,7 @@ namespace MuhasibPro.Data.Database.Extensions
                     isDatabaseExists,
                     databaseValid,
                     tablesToCheck,
-                    logger,
-                    ct).ConfigureAwait(false);
+                    logger).ConfigureAwait(false);
 
                 if (finalAnalysis.DatabaseValid == false && restoreAction != null)
                 {
@@ -274,14 +270,13 @@ namespace MuhasibPro.Data.Database.Extensions
 
         /// <summary>
         /// // WRITE OPERATION - veritabanı oluşturur  var created = await dbContext.ExecuteCreatingAsync( databaseName:
-        /// "SistemDB", logger: _logger, commandTimeoutMinutes: 10, cancellationToken: ct);
+        /// "SistemDB", logger: _logger, commandTimeoutMinutes: 10);
         /// </summary>
         public static async Task<DatabaseCreatingExecutionResult> ExecuteCreatingDatabaseAsync(
             this DbContext context,
             string databaseName,
             ILogger logger = null,
-            int commandTimeoutMinutes = 5,
-            CancellationToken ct = default)
+            int commandTimeoutMinutes = 5)
         {
             var result = new DatabaseCreatingExecutionResult
             {
@@ -293,7 +288,7 @@ namespace MuhasibPro.Data.Database.Extensions
             {
                 // 3. MIGRATION UYGULA
                 context.Database.SetCommandTimeout(TimeSpan.FromMinutes(commandTimeoutMinutes));
-                await context.Database.MigrateAsync(ct).ConfigureAwait(false);
+                await context.Database.MigrateAsync().ConfigureAwait(false);
                 var canConnect = await context.Database.CanConnectAsync().ConfigureAwait(false);
                 if (canConnect)
                 {
@@ -316,14 +311,14 @@ namespace MuhasibPro.Data.Database.Extensions
         #endregion
 
         #region Private Helpers
-        private static async Task<bool> TableExistsAsync(DbContext context, string tableName, CancellationToken ct)
+        private static async Task<bool> TableExistsAsync(DbContext context, string tableName)
         {
             try
             {
                 var sql = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = {0}";
                 var count = await context.Database
                     .SqlQueryRaw<int>(sql, tableName)
-                    .FirstOrDefaultAsync(ct)
+                    .FirstOrDefaultAsync()
                     .ConfigureAwait(false);
                 return count > 0;
             }
@@ -334,7 +329,7 @@ namespace MuhasibPro.Data.Database.Extensions
             }
         }
 
-        private static async Task<bool> TableHasRowsSafeAsync(DbContext context, string tableName, CancellationToken ct)
+        private static async Task<bool> TableHasRowsSafeAsync(DbContext context, string tableName)
         {
             if (!IsValidTableName(tableName))
                 return false;
@@ -342,7 +337,7 @@ namespace MuhasibPro.Data.Database.Extensions
             try
             {
                 var sql = $"SELECT COUNT(*) FROM \"{tableName}\" LIMIT 1";
-                var count = await context.Database.SqlQueryRaw<int>(sql).FirstOrDefaultAsync(ct).ConfigureAwait(false);
+                var count = await context.Database.SqlQueryRaw<int>(sql).FirstOrDefaultAsync().ConfigureAwait(false);
                 return count > 0;
             }
             catch

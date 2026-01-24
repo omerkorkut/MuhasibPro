@@ -337,7 +337,7 @@ namespace MuhasibPro
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            MigrationManager.InitializeSistemDatabaseAsync(cancellationToken: CancellationToken.None);
+            MigrationManager.InitializeSistemDatabaseAsync();
 
         }
     }

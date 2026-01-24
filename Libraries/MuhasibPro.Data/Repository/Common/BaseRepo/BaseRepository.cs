@@ -123,9 +123,9 @@ namespace MuhasibPro.Data.Repository.Common.BaseRepo
             return await DbSet.Where(predicate).AsNoTracking().FirstOrDefaultAsync().ConfigureAwait(false);
         }
 
-        public virtual async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate,CancellationToken cancellationToken)
+        public virtual async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
         {
-            return await DbSet.FirstOrDefaultAsync(predicate,cancellationToken).ConfigureAwait(false);
+            return await DbSet.FirstOrDefaultAsync(predicate).ConfigureAwait(false);
         }
 
         public virtual async Task<IList<T>> GetPagedAsync(int skip, int take, DataRequest<T> request)

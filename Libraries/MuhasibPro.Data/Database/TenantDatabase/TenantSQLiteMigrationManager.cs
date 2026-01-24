@@ -40,7 +40,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             var tenantDbValid = _applicationPaths.IsTenantDatabaseValid(databaseName);
             return (tenantFileExist, tenantDbValid);
         }
-        public async Task<DatabaseMigrationExecutionResult> InitializeTenantDatabaseAsync(string databaseName, CancellationToken cancellationToken)
+        public async Task<DatabaseMigrationExecutionResult> InitializeTenantDatabaseAsync(string databaseName)
         {
             var result = new DatabaseMigrationExecutionResult
             {
@@ -56,7 +56,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
 
             try
             {
-                if (!await _globalMigrationLock.WaitAsync(TimeSpan.FromSeconds(LOCK_TIMEOUT_SECONDS), cancellationToken).ConfigureAwait(false))
+                if (!await _globalMigrationLock.WaitAsync(TimeSpan.FromSeconds(LOCK_TIMEOUT_SECONDS)).ConfigureAwait(false))
                 {
                     result.HasError = true;
                     result.Message = "Veritabanı migrasyonu için kilit alınamadı. Başka bir işlem devam ediyor olabilir.";
@@ -64,7 +64,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 }
                 try
                 {
-                    var analysis = await GetTenantDatabaseStateAsync(databaseName, cancellationToken).ConfigureAwait(false);
+                    var analysis = await GetTenantDatabaseStateAsync(databaseName).ConfigureAwait(false);
                     if (!analysis.IsHealthy)
                     {
                         result.HasError = true;
@@ -74,13 +74,12 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                     async Task<bool> RestoreWrapper()
                     {
                         return await _backupManager.RestoreFromLatestBackupAsync(
-                            databaseName: databaseName,
-                            cancellationToken: cancellationToken)
+                            databaseName: databaseName)
                             .ConfigureAwait(false);
                     }
                     async Task<bool> BackupWrapper()
                     {
-                        var res = await _backupManager.CreateBackupAsync(databaseName, DatabaseBackupType.Migration, cancellationToken).ConfigureAwait(false);
+                        var res = await _backupManager.CreateBackupAsync(databaseName, DatabaseBackupType.Migration).ConfigureAwait(false);
                         return res != null && res.IsBackupComleted;
                     }
                     using var _dbContext = _dbContextFactory.CreateDbContext(databaseName);
@@ -91,13 +90,12 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                         tablesToCheck: TablesToCheck,
                         restoreAction: RestoreWrapper,
                         backupAction: BackupWrapper,
-                        logger: _logger,
-                        ct: cancellationToken)
+                        logger: _logger)
                         .ConfigureAwait(false);
                     if (migrationResult.IsHealthy)
                     {
                         // ⭐ VERSİYONU GÜNCELLE (migration'dan SONRA)
-                        await TenantDbVersionFromMigrationsAsync(_dbContext, databaseName, cancellationToken).ConfigureAwait(false);
+                        await TenantDbVersionFromMigrationsAsync(_dbContext, databaseName).ConfigureAwait(false);
                     }
                     result = migrationResult;
                     return migrationResult;
@@ -116,8 +114,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             }
         }
         public async Task<DatabaseCreatingExecutionResult> CreateNewTenantDatabase(
-            string databaseName,
-            CancellationToken cancellationToken = default)
+            string databaseName)
         {
             var result = new DatabaseCreatingExecutionResult
             {
@@ -140,8 +137,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 using var dbContext = _dbContextFactory.CreateDbContext(databaseName);
                 var createResult = await dbContext.ExecuteCreatingDatabaseAsync(
                     databaseName: databaseName,
-                    logger: _logger,
-                    ct: cancellationToken)
+                    logger: _logger)
                     .ConfigureAwait(false);
                 if (!createResult.IsCreatedSuccess)
                 {
@@ -150,7 +146,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                     return result;
                 }
                 result = createResult;
-                await TenantDbVersionFromMigrationsAsync(dbContext, databaseName, cancellationToken).ConfigureAwait(false);
+                await TenantDbVersionFromMigrationsAsync(dbContext, databaseName).ConfigureAwait(false);
                 _logger.LogInformation("Yeni tenant database oluşturuldu: {Database}", databaseName);
                 return result;
             }
@@ -164,8 +160,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         }
 
         public async Task<DatabaseConnectionAnalysis> GetTenantDatabaseStateAsync(
-            string databaseName,
-            CancellationToken cancellationToken)
+            string databaseName)
         {
             var tenantdbState = CheckTenantDatabaseState(databaseName);
 
@@ -178,8 +173,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 isDatabaseExists: tenantdbState.tenatFileExist,
                 databaseValid: tenantdbState.tenantDbValid,
                 tablesToCheck: TablesToCheck,
-                logger: _logger,
-                ct: cancellationToken)
+                logger: _logger)
                 .ConfigureAwait(false);
             if (result.IsDatabaseExists)
             {
@@ -191,12 +185,11 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         }
 
         public async Task<List<string>> GetTenantPendingMigrationsAsync(
-            string databaseName,
-            CancellationToken cancellationToken = default)
+            string databaseName)
         {
             try
             {
-                var state = await GetTenantDatabaseStateAsync(databaseName, cancellationToken).ConfigureAwait(false);
+                var state = await GetTenantDatabaseStateAsync(databaseName).ConfigureAwait(false);
                 return state.PendingMigrations;
             }
             catch (OperationCanceledException ex)
@@ -212,8 +205,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         }
 
         public async Task<string> GetTenantCurrentDatabaseVersionAsync(
-            string databaseName,
-            CancellationToken cancellationToken = default)
+            string databaseName)
         {
             try
             {
@@ -221,14 +213,14 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                 var versionRecord = await _dbContext.TenantDatabaseVersiyonlar
                     .Where(v => v.DatabaseName == databaseName)
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(cancellationToken)
+                    .FirstOrDefaultAsync()
                     .ConfigureAwait(false);
 
                 if (versionRecord != null)
                     return versionRecord.CurrentTenantDbVersion;
 
                 // Version kaydı yoksa state'ten al
-                var state = await GetTenantDatabaseStateAsync(databaseName, cancellationToken).ConfigureAwait(false);
+                var state = await GetTenantDatabaseStateAsync(databaseName).ConfigureAwait(false);
                 return state.CurrentVersion;
             }
             catch (Exception ex)
@@ -238,12 +230,12 @@ namespace MuhasibPro.Data.Database.TenantDatabase
             }
         }
 
-        private async Task TenantDbVersionFromMigrationsAsync(AppDbContext context, string databaseName, CancellationToken cancellationToken)
+        private async Task TenantDbVersionFromMigrationsAsync(AppDbContext context, string databaseName)
         {
             try
             {
                 var appliedMigrations = await context.Database
-                    .GetAppliedMigrationsAsync(cancellationToken)
+                    .GetAppliedMigrationsAsync()
                     .ConfigureAwait(false);
 
                 var latestMigration = appliedMigrations.LastOrDefault();
@@ -254,12 +246,12 @@ namespace MuhasibPro.Data.Database.TenantDatabase
 
                 // Transaction başlat
                 await using var transaction = await context.Database
-                    .BeginTransactionAsync(cancellationToken)
+                    .BeginTransactionAsync()
                     .ConfigureAwait(false);
 
                 var versionRecord = await context.TenantDatabaseVersiyonlar
                     .Where(v => v.DatabaseName == databaseName)
-                    .FirstOrDefaultAsync(cancellationToken)
+                    .FirstOrDefaultAsync()
                     .ConfigureAwait(false);
 
                 if (versionRecord == null)
@@ -274,7 +266,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                     };
 
                     await context.TenantDatabaseVersiyonlar
-                        .AddAsync(firstVersion, cancellationToken)
+                        .AddAsync(firstVersion)
                         .ConfigureAwait(false);
 
                     _logger.LogInformation(
@@ -289,8 +281,8 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                     versionRecord.CurrentTenantDbLastUpdate = DateTime.UtcNow;
                 }
 
-                await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                await context.SaveChangesAsync().ConfigureAwait(false);
+                await transaction.CommitAsync().ConfigureAwait(false);
 
                 _logger.LogInformation(
                     "Database versiyonu güncellendi: {Database} ({Old} → {New})",

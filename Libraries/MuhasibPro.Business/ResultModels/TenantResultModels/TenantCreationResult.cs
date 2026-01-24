@@ -1,5 +1,4 @@
-﻿using MuhasibPro.Business.DTOModel.SistemModel;
-using System.Text;
+﻿using System.Text;
 
 namespace MuhasibPro.Business.ResultModels.TenantResultModels
 {
@@ -15,32 +14,27 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
     public enum TenantCreationStep
     {
         // BAŞLANGIÇ
-        IslemBaslatildi,
+        IslemBaslatildi,        
 
-        // VALİDASYON
-        FirmaValidasyonu,
-        MaliYilValidasyonu,
-        DuplicateKontrolu,
+        // Ön Kontroller
+        MaliDonemZatenVarMiKontrolu,
+        FirmaBilgileriKontrolu,
+        MaliYilGecerlilikKontrolu,
+        MaliDonemZatenVar,
 
-        // OLUŞTURMA
-        FirmaBilgileriAliniyor,
+        // İşlemler
+        
         VeritabaniAdiOlusturuluyor,
         MaliDonemKaydiOlusturuluyor,
         VeritabaniDosyasiOlusturuluyor,
-        MigrationCalistiriliyor,
 
-        // TAMAMLAMA
+        // Tamamlananlar     
         TumIslemlerTamamlandi,
 
         // HATA
-        FirmaBulunamadi,
-        GecersizMaliYil,
-        MaliDonemZatenVar,
-        VeritabaniAdiOlusturulamadi,
-        MaliDonemKaydiHatasi,
-        VeritabaniOlusturmaHatasi,
-        MigrationHatasi,
-        BeklenmeyenHata
+        
+        BeklenmeyenHata,
+        TumIslemlerGeriAlindi,
     }
 
     public class CreationStep
@@ -57,6 +51,7 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
         public bool IsCompleted => Status == CreationStepStatus.Tamamlandi
                                 || Status == CreationStepStatus.Hata
                                 || Status == CreationStepStatus.Uyari;
+        
     }
 
     public class TenantCreationResult
@@ -68,8 +63,7 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
         public int MaliYil { get; set; }
 
         // Durumlar
-        public bool DatabaseCreated { get; set; }
-        public bool MigrationsRun { get; set; }
+        public bool DatabaseCreated { get; set; }        
         public bool HasError { get; set; }
         public bool CreateCompleted { get; set; }
         public string ErrorMessage { get; set; } = string.Empty;
@@ -78,15 +72,20 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
         // İşlem akışı
         public List<CreationStep> Steps { get; } = new();
         public CreationStep CurrentStep => Steps.LastOrDefault(s => !s.IsCompleted);
-        public bool IsSuccess => CreateCompleted && !HasError && MigrationsRun && DatabaseCreated;
-
+        public bool IsSuccess => CreateCompleted && !HasError  && DatabaseCreated;
+        
         // İlerleme
         public int TotalSteps => Steps.Count;
         public int CompletedSteps => Steps.Count(s => s.IsCompleted);
         public int ProgressPercentage => TotalSteps > 0 ? (CompletedSteps * 100) / TotalSteps : 0;
 
-        // Yardımcı metodlar
-        public void StartStep(TenantCreationStep step, string message = "")
+      
+     
+        public void StartStep(TenantCreationStep step)
+        {
+            StartStep(step,GetStepDisplayName(step));
+        }
+        private void StartStep(TenantCreationStep step, string message = "")
         {
             Steps.Add(new CreationStep
             {
@@ -96,7 +95,6 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
                 Message = message
             });
         }
-
         public void CompleteStep(CreationStepStatus status, string message = "")
         {
             var current = CurrentStep;
@@ -124,6 +122,7 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
                 ? "✅ Veritabanı başarıyla oluşturuldu"
                 : message;
         }
+ 
 
         // Kullanıcı dostu görüntüleme
         public string GetProgressDisplay()
@@ -179,32 +178,30 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
             return step switch
             {
                 // BAŞLANGIÇ
-                TenantCreationStep.IslemBaslatildi => "İşlem Başlatıldı",
+                TenantCreationStep.IslemBaslatildi => "⏳ İşlem Başlatıldı",
+                
 
                 // VALİDASYON
-                TenantCreationStep.FirmaValidasyonu => "Firma Validasyonu",
-                TenantCreationStep.MaliYilValidasyonu => "Mali Yıl Validasyonu",
-                TenantCreationStep.DuplicateKontrolu => "Mali Dönem Kontrolü",
+                TenantCreationStep.FirmaBilgileriKontrolu => " 🗃️ Firma Bilgileri Kontrol Ediliyor",
+                TenantCreationStep.MaliYilGecerlilikKontrolu => "🧮 Mali Yıl Geçerliliği Kontrol Ediliyor",
+                TenantCreationStep.MaliDonemZatenVarMiKontrolu => $"🟢 Mali Dönem Kontrol Ediliyor",
+                TenantCreationStep.MaliDonemZatenVar => $"🟢 Oluşturmak İstediğiniz Mali Dönem Zaten Var.",
 
-                // OLUŞTURMA
-                TenantCreationStep.FirmaBilgileriAliniyor => "Firma Bilgileri Alınıyor",
-                TenantCreationStep.VeritabaniAdiOlusturuluyor => "Veritabanı Adı Oluşturuluyor",
-                TenantCreationStep.MaliDonemKaydiOlusturuluyor => "Mali Dönem Kaydı Oluşturuluyor",
-                TenantCreationStep.VeritabaniDosyasiOlusturuluyor => "Veritabanı Dosyası Oluşturuluyor",
-                TenantCreationStep.MigrationCalistiriliyor => "Migration Çalıştırılıyor",
+                // İşlemler
+                
+                TenantCreationStep.VeritabaniAdiOlusturuluyor => "📝 Veritabanı Adı Oluşturuluyor",
+                TenantCreationStep.MaliDonemKaydiOlusturuluyor => "➕ Mali Dönem Kaydı Oluşturuluyor",
+                TenantCreationStep.VeritabaniDosyasiOlusturuluyor => "🔗 Veritabanı Dosyası Oluşturuluyor",
 
-                // TAMAMLAMA
-                TenantCreationStep.TumIslemlerTamamlandi => "Tüm İşlemler Tamamlandı",
 
-                // HATA
-                TenantCreationStep.FirmaBulunamadi => "Firma Bulunamadı",
-                TenantCreationStep.GecersizMaliYil => "Geçersiz Mali Yıl",
-                TenantCreationStep.MaliDonemZatenVar => "Mali Dönem Zaten Var",
-                TenantCreationStep.VeritabaniAdiOlusturulamadi => "Veritabanı Adı Oluşturulamadı",
-                TenantCreationStep.MaliDonemKaydiHatasi => "Mali Dönem Kaydı Hatası",
-                TenantCreationStep.VeritabaniOlusturmaHatasi => "Veritabanı Oluşturma Hatası",
-                TenantCreationStep.MigrationHatasi => "Migration Hatası",
-                TenantCreationStep.BeklenmeyenHata => "Beklenmeyen Hata",
+                // İşlem Sonucları
+             
+                TenantCreationStep.TumIslemlerTamamlandi => "✅ Tüm İşlemler Tamamlandı",
+
+        
+                TenantCreationStep.TumIslemlerGeriAlindi => "❌ Yapısal bütünlük sağlanamadı, Tüm işlemler geri alındı",
+                
+                TenantCreationStep.BeklenmeyenHata => "❗ Beklenmeyen Hata",
 
                 _ => step.ToString()
             };

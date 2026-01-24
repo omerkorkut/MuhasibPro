@@ -26,15 +26,15 @@ namespace MuhasibPro.Data.Contracts.Database.TenantDatabase
         /// Switches to the specified tenant database
         /// </summary>
         /// <param name="databaseName">The name of the database to switch to</param>
-        /// <param name="cancellationToken">Cancellation token</param>
+       
         /// <returns>The new tenant context</returns>
         /// <exception cref="ArgumentException">Thrown when databaseName is null or empty</exception>
         /// <exception cref="InvalidOperationException">Thrown when connection to database fails</exception>
-        Task<TenantContext> SwitchToTenantAsync(string databaseName, CancellationToken cancellationToken = default);
+        Task<TenantContext> SwitchToTenantAsync(string databaseName);
 
         /// <summary>
         /// Clears the current tenant (sets to empty)
         /// </summary>
-        Task ClearCurrentTenantAsync(CancellationToken cancellationToken = default);
+        Task ClearCurrentTenantAsync();
     }
 }

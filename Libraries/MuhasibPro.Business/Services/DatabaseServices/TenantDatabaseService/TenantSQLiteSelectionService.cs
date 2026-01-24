@@ -3,6 +3,7 @@ using MuhasibPro.Business.Contracts.DatabaseServices.TenantDatabaseServices;
 using MuhasibPro.Business.Contracts.SistemServices.LogServices;
 using MuhasibPro.Business.Services.SistemServices.LogServices;
 using MuhasibPro.Data.Contracts.Database.TenantDatabase;
+using MuhasibPro.Data.Database.Extensions;
 using MuhasibPro.Data.DataContext;
 using MuhasibPro.Domain.Utilities.Responses;
 
@@ -46,6 +47,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
     public class TenantSQLiteSelectionService : ITenantSQLiteSelectionService
     {
         private readonly ITenantSQLiteSelectionManager _selectionManager;
+        private readonly ITenantSQLiteDatabaseManager _databaseManager;
         private readonly IMessageService _messageService;
         private readonly ILogService _logService;
 
@@ -70,10 +72,10 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
 
         public bool IsTenantLoaded => _selectionManager.IsTenantLoaded;
 
-        public async Task ClearCurrentTenantAsync(CancellationToken cancellationToken = default)
-            => await _selectionManager.ClearCurrentTenantAsync(cancellationToken);
+        public async Task ClearCurrentTenantAsync()
+            => await _selectionManager.ClearCurrentTenantAsync();
 
-        public async Task<ApiDataResponse<bool>> DisconnectCurrentTenantAsync(CancellationToken cancellationToken)
+        public async Task<ApiDataResponse<bool>> DisconnectCurrentTenantAsync()
         {
             try
             {
@@ -84,7 +86,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                         message: "🟢 Zaten aktif bir bağlantı bulunamadı");
                 }
 
-                await ClearCurrentTenantAsync(cancellationToken);
+                await ClearCurrentTenantAsync();
 
                 await _logService.SistemLogService.SistemLogInformationAsync(
                     "Mali Dönem Seçimi",
@@ -93,7 +95,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                     "Veritabanı bağlantısı kullanıcı tarafından kesildi");
 
                 // Kısa bekle ve kontrol et
-                await Task.Delay(100, cancellationToken);
+                await Task.Delay(100);
 
                 if (IsTenantLoaded)
                 {
@@ -119,8 +121,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
         public TenantContext CurrentTenant => _selectionManager.GetCurrentTenant();
 
         public async Task<ApiDataResponse<TenantContext>> SwitchTenantAsync(
-            string databaseName,
-            CancellationToken cancellationToken)
+            string databaseName)
         {
             // Input validation
             if (string.IsNullOrWhiteSpace(databaseName))
@@ -139,11 +140,15 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                     data: CurrentTenant,
                     message: "🔁 Zaten bu mali dönemi kullanıyorsunuz!");
             }
-
+            var initilizeDatabase = await _databaseManager.InitializeTenantDatabaseAsync(databaseName);
+            if(!initilizeDatabase.IsHealthy)
+            {
+                return ApiDataExtensions.ErrorResponse<TenantContext>(CurrentTenant, initilizeDatabase.ToUIFullMessage());
+            }
             try
             {
                 var newTenant = await _selectionManager.SwitchToTenantAsync(
-                    databaseName, cancellationToken);
+                    databaseName);
 
                 // Business logging - sadece başarılıysa
                 if (newTenant.IsLoaded)

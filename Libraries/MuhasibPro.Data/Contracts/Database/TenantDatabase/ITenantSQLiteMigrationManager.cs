@@ -4,13 +4,12 @@ namespace MuhasibPro.Data.Contracts.Database.TenantDatabase
 {
     public interface ITenantSQLiteMigrationManager
     {
-        Task<DatabaseMigrationExecutionResult> InitializeTenantDatabaseAsync(string databaseName, CancellationToken cancellationToken);
+        Task<DatabaseMigrationExecutionResult> InitializeTenantDatabaseAsync(string databaseName);
         Task<DatabaseCreatingExecutionResult> CreateNewTenantDatabase(
-            string databaseName,
-            CancellationToken cancellationToken = default);
-        Task<DatabaseConnectionAnalysis> GetTenantDatabaseStateAsync(string databaseName, CancellationToken cancellationToken);
-        Task<List<string>> GetTenantPendingMigrationsAsync(string databaseName, CancellationToken cancellationToken);
-        Task<string> GetTenantCurrentDatabaseVersionAsync(string databaseName, CancellationToken cancellationToken);
+            string databaseName);
+        Task<DatabaseConnectionAnalysis> GetTenantDatabaseStateAsync(string databaseName);
+        Task<List<string>> GetTenantPendingMigrationsAsync(string databaseName);
+        Task<string> GetTenantCurrentDatabaseVersionAsync(string databaseName);
 
     }
 }

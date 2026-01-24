@@ -10,12 +10,12 @@ namespace MuhasibPro.Business.Contracts.SistemServices.AppServices
         Task<ApiDataResponse<MaliDonemModel>> GetByMaliDonemIdAsync(long id);
         Task<ApiDataResponse<IList<MaliDonemModel>>> GetMaliDonemlerPageAsync(int skip, int take, DataRequest<MaliDonem> request);
         
-        Task<ApiDataResponse<int>> UpdateMaliDonemAsync(MaliDonemModel model,CancellationToken cancellationToken);
-        Task<ApiDataResponse<int>> DeleteMaliDonemAsync(long maliDonemId,CancellationToken cancellationToken);
-
+        Task<ApiDataResponse<int>> UpdateMaliDonemAsync(MaliDonemModel model);
+        Task<ApiDataResponse<int>> DeleteMaliDonemAsync(long maliDonemId);
+        Task<ApiDataResponse<int>> RestoreMaliDonemAsync(MaliDonemModel model);
         Task<ApiDataResponse<int>> GetMaliDonemlerCountAsync(DataRequest<MaliDonem> request);
         Task<bool> IsMaliDonemAnyAsync();
-        Task<bool> IsMaliDonemExistsAsync(long firmaId, int maliYil,CancellationToken cancellationToken);
+        Task<bool> IsMaliDonemExistsAsync(long firmaId, int maliYil);
         Task<ApiDataResponse<MaliDonemModel>> CreateNewMaliDonemForFirmaAsync(long firmaId);
 
 

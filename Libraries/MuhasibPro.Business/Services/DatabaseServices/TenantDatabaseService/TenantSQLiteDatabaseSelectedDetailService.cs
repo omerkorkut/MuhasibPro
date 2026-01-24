@@ -4,6 +4,7 @@ using MuhasibPro.Business.Contracts.SistemServices.LogServices;
 using MuhasibPro.Business.DTOModel.SistemModel;
 using MuhasibPro.Business.ResultModels.TenantResultModels;
 using MuhasibPro.Business.Services.SistemServices.LogServices;
+using MuhasibPro.Data.Contracts.Database.Common.Helpers;
 using MuhasibPro.Domain.Common;
 using MuhasibPro.Domain.Entities.SistemEntity;
 using MuhasibPro.Domain.Utilities.Responses;
@@ -15,12 +16,14 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
         private readonly IMaliDonemService _donemService;
         private readonly IFirmaService _firmaService;
         private readonly ILogService _logService;
+        private readonly IApplicationPaths _applicationPaths;
 
-        public TenantSQLiteDatabaseSelectedDetailService(IMaliDonemService donemService, ILogService logService, IFirmaService firmaService)
+        public TenantSQLiteDatabaseSelectedDetailService(IMaliDonemService donemService, ILogService logService, IFirmaService firmaService, IApplicationPaths applicationPaths)
         {
             _donemService = donemService;
             _logService = logService;
             _firmaService = firmaService;
+            _applicationPaths = applicationPaths;
         }
 
         public async Task<ApiDataResponse<TenantDetailsModel>> GetTenantDetailsAsync(long maliDonemId)
@@ -37,6 +40,11 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                 {
                     return new ErrorApiDataResponse<TenantDetailsModel>(data: tenantDetails, message: maliDonem.Message);
                 }
+                var databaseExists = _applicationPaths.TenantDatabaseFileExists(maliDonem.Data.DatabaseName);
+                if (!databaseExists)
+                {
+                    return ApiDataExtensions.ErrorResponse(tenantDetails, "Veritabanı bulunamadı");
+                }
                 if(maliDonem.Success && maliDonem.Data != null)
                 {
                     var resultTenantDetail = new TenantDetailsModel
@@ -52,9 +60,9 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                         resultTenantDetail.FirmaKodu = maliDonem.Data.FirmaModel.FirmaKodu;
                         resultTenantDetail.FirmaKisaUnvan = maliDonem.Data.FirmaModel.KisaUnvani;
                     }
-                    return new SuccessApiDataResponse<TenantDetailsModel>(data: resultTenantDetail, message: "Mali Dönem'e ait veritabanı bilgileri alındı");
+                    return new SuccessApiDataResponse<TenantDetailsModel>(data: resultTenantDetail, message: "Mali Dönem'e ve veritabanı bilgileri alındı");
                 }
-                return new ErrorApiDataResponse<TenantDetailsModel>(data: tenantDetails, message: "Mali Dönem'e ait veritabanı bilgileri alınamadı");
+                return new ErrorApiDataResponse<TenantDetailsModel>(data: tenantDetails, message: "Mali Dönem'e ve veritabanı bilgileri alınamadı");
             } catch(Exception ex)
             {
                 await _logService.SistemLogService.SistemLogExceptionAsync("Mali Dönem Veritabanı Detay İşlemleri", "Mali Dönem Veritabanı İşlemleri", ex);

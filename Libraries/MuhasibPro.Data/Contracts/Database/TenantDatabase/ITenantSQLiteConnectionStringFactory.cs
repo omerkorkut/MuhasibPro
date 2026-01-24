@@ -9,7 +9,7 @@
         /// <param name="dbType">Veritabanı tipi (SQLite, SqlServer)</param>
         /// <returns>Connection string</returns>
         string CreateConnectionString(string databaseName);
-        Task<(bool canConnect, string message, string connectionString)> ValidateConnectionStringAsync(string databaseName, CancellationToken cancellationToken = default);
+        Task<(bool canConnect, string message, string connectionString)> ValidateConnectionStringAsync(string databaseName);
 
 
     }

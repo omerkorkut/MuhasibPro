@@ -23,17 +23,13 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
             _databaseManager = databaseManager;
             _logService = logService;
             _applicationPaths = applicationPaths;
-        }
-
-        private (bool tenantFileExist, bool tenantDbValid) CheckTenantDatabaseState(string databaseName) => _databaseManager.CheckTenantDatabaseState(
-            databaseName);
+        }    
 
         public async Task<ApiDataResponse<DatabaseCreatingExecutionResult>> CreateNewTenantDatabaseAsync(
-            string databaseName,
-            CancellationToken cancellationToken)
+            string databaseName)
         {
-            var checkTenantDb = CheckTenantDatabaseState(databaseName);
-            if(checkTenantDb.tenantFileExist && checkTenantDb.tenantDbValid)
+            var checkTenantDb = await ValidateTenantDatabaseAsync(databaseName);
+            if(checkTenantDb.isValid)
             {
                 var result = new DatabaseCreatingExecutionResult { DatabaseName = databaseName, };
                 return new SuccessApiDataResponse<DatabaseCreatingExecutionResult>(
@@ -42,7 +38,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
             }
             try
             {
-                var createTenant = await _databaseManager.CreateNewTenantDatabaseAsync(databaseName, cancellationToken);
+                var createTenant = await _databaseManager.CreateNewTenantDatabaseAsync(databaseName);
                 if(!createTenant.IsCreatedSuccess)
                 {
                     await _logService.SistemLogService
@@ -75,17 +71,16 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
         }
 
         public async Task<ApiDataResponse<DatabaseDeletingExecutionResult>> DeleteTenantDatabase(
-            string databaseName,
-            CancellationToken cancellationToken)
+            string databaseName)
         {
-            var tenantFileExist = CheckTenantDatabaseState(databaseName);
-            if(!tenantFileExist.tenantFileExist)
+            var tenantFileExist = await ValidateTenantDatabaseAsync(databaseName);
+            if(!tenantFileExist.isValid)
                 return new ErrorApiDataResponse<DatabaseDeletingExecutionResult>(
                     data: null,
                     message: "⚠️ Silinecek veritabanı bulunamadı");
             try
             {
-                var deleteTenant = await _databaseManager.DeleteTenantDatabase(databaseName, cancellationToken);
+                var deleteTenant = await _databaseManager.DeleteTenantDatabase(databaseName);
                 if(!deleteTenant.IsDeletedSuccess)
                 {
                     await _logService.SistemLogService
@@ -114,6 +109,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                 return new ErrorApiDataResponse<DatabaseDeletingExecutionResult>(
                     null,
                     message: $"[HATA] Mali Dönem'e ait veritabanı silenemedi : {ex.Message}");
+                
             }
         }
 
@@ -142,15 +138,14 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
         }
 
         public async Task<ApiDataResponse<DatabaseConnectionAnalysis>> GetTenantDatabaseStateAsync(
-            string databaseName,
-            CancellationToken cancellationToken)
+            string databaseName)
         {
             var analysis = new DatabaseConnectionAnalysis();
             if (!string.IsNullOrEmpty(databaseName))
                 return new ErrorApiDataResponse<DatabaseConnectionAnalysis>(data: analysis, message: "⚠️ Veritabanı adı boş olamaz");
             try
             {
-                var analysisResult = await _databaseManager.GetTenantDatabaseStateAsync(databaseName,cancellationToken);
+                var analysisResult = await _databaseManager.GetTenantDatabaseStateAsync(databaseName);
                 if(analysisResult == null)
                 {
                     return new ErrorApiDataResponse<DatabaseConnectionAnalysis>(data: analysis, message: $"{databaseName}, Veritabanı analiz edilemedi");
@@ -172,44 +167,14 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
             }
         }
 
-        public async Task<ApiDataResponse<DatabaseMigrationExecutionResult>> InitializeTenantDatabaseAsync(
-            string databaseName,
-            CancellationToken cancellationToken)
-        {
-            var initializeDB = new DatabaseMigrationExecutionResult();
-            if (string.IsNullOrEmpty(databaseName))
-                return new ErrorApiDataResponse<DatabaseMigrationExecutionResult>(data: initializeDB, message: "⚠️ Veritabanı adı boş olamaz!");
-            try
-            {
-                var initializeResult = await _databaseManager.InitializeTenantDatabaseAsync(databaseName, cancellationToken);
-                if (initializeResult.HasError) 
-                {
-                    await _logService.SistemLogService.SistemLogErrorAsync(
-                       "Mali Dönem Veritabanı İşlemleri",
-                       "Veritabanı Hazırlama ve güncelleme",
-                       "Veritabanı hazırlı işleminde hata oluştu",
-                       initializeResult.Message);
-                    return new ErrorApiDataResponse<DatabaseMigrationExecutionResult>(data: initializeDB, message: initializeResult.Message);
-                }                
-                return new SuccessApiDataResponse<DatabaseMigrationExecutionResult>(data: initializeResult, message: initializeResult.Message); ;
-            }
-            catch (Exception ex)
-            {
-                await _logService.SistemLogService.SistemLogExceptionAsync("Mali Dönem Veritabanı işlemleri", "Veritabanı Hazırlama", ex);
-                return new ErrorApiDataResponse<DatabaseMigrationExecutionResult>(data: initializeDB, message: $"[HATA] {ex.Message}");
-            }
-        }
+     
 
         public async Task<(bool isValid, string Message)> ValidateTenantDatabaseAsync(
-            string databaseName,
-            CancellationToken cancellationToken = default)
+            string databaseName)
         {
             if (string.IsNullOrEmpty(databaseName))
-                return (false, "⚠️ Veritabanı adı boş olamaz!");
-            var check = CheckTenantDatabaseState(databaseName);
-            if (!check.tenantFileExist)
-                return (false, "🗃️ Veritabanı dosyası bulunamadı!");
-            return await _databaseManager.ValidateTenantDatabaseAsync(databaseName, cancellationToken);
+                return (false, "⚠️ Veritabanı adı boş olamaz!");            
+            return await _databaseManager.ValidateTenantDatabaseAsync(databaseName);
         }
       
     }

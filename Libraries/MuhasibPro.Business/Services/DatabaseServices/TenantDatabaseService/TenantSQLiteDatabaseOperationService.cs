@@ -18,7 +18,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
             _backupManager = backupManager;
             _logService = logService;
         }
-        public async Task<ApiDataResponse<int>> CleanOldBackupsAsync(string databaseName, int keepLast, CancellationToken cancellationToken = default)
+        public async Task<ApiDataResponse<int>> CleanOldBackupsAsync(string databaseName, int keepLast)
         {
             try
             {
@@ -85,7 +85,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                        $"Tahmini boşalan alan: {totalSizeMB}");
 
                 // Data katmanı metodunu çağır
-                var deletedCount = await _backupManager.CleanOldBackupsAsync(databaseName, keepLast, cancellationToken);
+                var deletedCount = await _backupManager.CleanOldBackupsAsync(databaseName, keepLast);
 
                 // BUSINESS LOGIC: Sonuç değerlendirme
                 if (deletedCount <= 0)
@@ -138,7 +138,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                     resultCount: 0);
             }
         }
-        public async Task<ApiDataResponse<DatabaseBackupResult>> CreateBackupAsync(string databaseName, DatabaseBackupType backupType, CancellationToken cancellationToken)
+        public async Task<ApiDataResponse<DatabaseBackupResult>> CreateBackupAsync(string databaseName, DatabaseBackupType backupType)
         {
             try
             {
@@ -148,7 +148,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                    "İşlem başlatılıyor...",
                    $"Yedekleme Tipi: {backupType}");
 
-                var result = await _backupManager.CreateBackupAsync(databaseName, backupType, cancellationToken);
+                var result = await _backupManager.CreateBackupAsync(databaseName, backupType);
 
                 if (result.IsBackupComleted)
                 {
@@ -198,6 +198,10 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                     resultCount: 0);
             }
         }
+
+        public Task<DatabaseDeletingExecutionResult> DeleteBackupDatabaseAsync(string databaseName)
+        => _backupManager.DeleteBackupDatabaseAsync(databaseName);
+
         public async Task<ApiDataResponse<List<DatabaseBackupResult>>> GetBackupHistoryAsync(string databaseName)
         {
             try
@@ -261,8 +265,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
             }
         }
         public async Task<ApiDataResponse<DatabaseRestoreExecutionResult>> RestoreBackupAsync(string databaseName,
-      string backupFileName,
-      CancellationToken cancellationToken)
+      string backupFileName)
         {
             try
             {
@@ -281,7 +284,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                     $"Geri yüklenmesi beklenen yedek dosyası: {backupFileName}");
 
 
-                var result = await _backupManager.RestoreBackupAsync(databaseName, backupFileName, cancellationToken);
+                var result = await _backupManager.RestoreBackupAsync(databaseName, backupFileName);
 
                 if (result.IsRestoreSuccess)
                 {
@@ -322,7 +325,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                     resultCount: 0);
             }
         }
-        public async Task<ApiDataResponse<bool>> RestoreFromLatestBackupAsync(string databaseName, CancellationToken cancellationToken)
+        public async Task<ApiDataResponse<bool>> RestoreFromLatestBackupAsync(string databaseName)
         {
             try
             {
@@ -331,7 +334,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                     "Veritabanını Yedekten Geri Yükleme",
                     "⏳ Geri yükleme işlemi başlatılıyor.",
                     "Sistem veritabanı son yedeği ile değiştirilecek!");
-                var result = await _backupManager.RestoreFromLatestBackupAsync(databaseName, cancellationToken);
+                var result = await _backupManager.RestoreFromLatestBackupAsync(databaseName);
                 if (result)
                 {
                     await _logService.SistemLogInformationAsync(

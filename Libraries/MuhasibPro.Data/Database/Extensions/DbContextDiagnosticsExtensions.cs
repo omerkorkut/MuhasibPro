@@ -17,8 +17,7 @@ namespace MuhasibPro.Data.Database.Extensions
             string[] tablesToCheck,
             IProgress<AnalysisProgress> progressReporter = null,
             AnalysisOptions options = null,
-            ILogger logger = null,
-            CancellationToken ct = default)
+            ILogger logger = null)
         {
             options ??= AnalysisOptions.Default;
             
@@ -51,7 +50,7 @@ namespace MuhasibPro.Data.Database.Extensions
 
                     var integrity = await context.Database
                         .SqlQueryRaw<string>("PRAGMA integrity_check")
-                        .FirstOrDefaultAsync(ct)
+                        .FirstOrDefaultAsync()
                         .ConfigureAwait(false);
 
                     if (integrity?.ToLower() != "ok")
@@ -68,7 +67,7 @@ namespace MuhasibPro.Data.Database.Extensions
                 // 3. BAĞLANTI TESTİ
                 analysis.ReportProgress("Bağlantı test ediliyor...", ProgressType.Info, 30, progressReporter);
 
-                analysis.CanConnect = await context.Database.CanConnectAsync(ct).ConfigureAwait(false);
+                analysis.CanConnect = await context.Database.CanConnectAsync().ConfigureAwait(false);
                 if (!analysis.CanConnect)
                 {
                     var message = "Veritabanına bağlanılamadı!";
@@ -103,7 +102,7 @@ namespace MuhasibPro.Data.Database.Extensions
                 else
                 {
                     // Tüm tabloları önceden al (performans için)
-                    var allTables = await GetAllTablesAsync(context, ct).ConfigureAwait(false);
+                    var allTables = await GetAllTablesAsync(context).ConfigureAwait(false);
 
                     // Batch işlemleri için
                     var batches = validTables.Batch(options.BatchSize);
@@ -117,7 +116,7 @@ namespace MuhasibPro.Data.Database.Extensions
 
                         foreach (var tableName in batchList)
                         {
-                            batchTasks.Add(AnalyzeTableAsync(context, tableName, allTables, logger, ct));
+                            batchTasks.Add(AnalyzeTableAsync(context, tableName, allTables, logger));
                         }
 
                         // Batch'i işle
@@ -161,7 +160,7 @@ namespace MuhasibPro.Data.Database.Extensions
                         // Bekleme (opsiyonel)
                         if (options.DelayBetweenBatches > TimeSpan.Zero)
                         {
-                            await Task.Delay(options.DelayBetweenBatches, ct).ConfigureAwait(false);
+                            await Task.Delay(options.DelayBetweenBatches).ConfigureAwait(false);
                         }
                     }
 
@@ -182,8 +181,8 @@ namespace MuhasibPro.Data.Database.Extensions
                 {
                     analysis.ReportProgress("Migration kontrolü yapılıyor...", ProgressType.Info, 92, progressReporter);
 
-                    var applied = (await context.Database.GetAppliedMigrationsAsync(ct).ConfigureAwait(false)).ToList();
-                    var pending = (await context.Database.GetPendingMigrationsAsync(ct).ConfigureAwait(false)).ToList();
+                    var applied = (await context.Database.GetAppliedMigrationsAsync().ConfigureAwait(false)).ToList();
+                    var pending = (await context.Database.GetPendingMigrationsAsync().ConfigureAwait(false)).ToList();
 
                     analysis.PendingMigrations = pending;
                     analysis.AppliedMigrationsCount = applied.Count;
@@ -216,8 +215,7 @@ namespace MuhasibPro.Data.Database.Extensions
             DbContext context,
             string tableName,
             List<string> allTables,
-            ILogger logger,
-            CancellationToken ct)
+            ILogger logger)
         {
             var result = new TableAnalysisResult { TableName = tableName };
 
@@ -229,7 +227,7 @@ namespace MuhasibPro.Data.Database.Extensions
                     result.Exists = true;
 
                     // Tablo varsa satır kontrolü yap
-                    result.HasRows = await TableHasRowsSafeAsync(context, tableName, ct).ConfigureAwait(false);
+                    result.HasRows = await TableHasRowsSafeAsync(context, tableName).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -241,7 +239,7 @@ namespace MuhasibPro.Data.Database.Extensions
             return result;
         }
 
-        private static async Task<List<string>> GetAllTablesAsync(DbContext context, CancellationToken ct)
+        private static async Task<List<string>> GetAllTablesAsync(DbContext context)
         {
             try
             {
@@ -249,7 +247,7 @@ namespace MuhasibPro.Data.Database.Extensions
 
                 return await context.Database
                     .SqlQueryRaw<string>(sql)
-                    .ToListAsync(ct)
+                    .ToListAsync()
                     .ConfigureAwait(false);
             }
             catch
@@ -310,8 +308,7 @@ namespace MuhasibPro.Data.Database.Extensions
         // 2. TableExistsAsync için:
         public static async Task<bool> TableExistsAsync(
             DbContext context,
-            string tableName,
-            CancellationToken ct = default)
+            string tableName)
         {
             if (!IsValidTableName(tableName))
                 return false;
@@ -322,7 +319,7 @@ namespace MuhasibPro.Data.Database.Extensions
 
                 return await context.Database
                     .SqlQueryRaw<int>(sql, new SqliteParameter("@name", tableName))
-                    .AnyAsync(ct)
+                    .AnyAsync()
                     .ConfigureAwait(false);
             }
             catch
@@ -334,22 +331,21 @@ namespace MuhasibPro.Data.Database.Extensions
         // 3. TableHasRowsSafeAsync için:
         public static async Task<bool> TableHasRowsSafeAsync(
             DbContext context,
-            string tableName,
-            CancellationToken ct = default)
+            string tableName)
         {
             if (!IsValidTableName(tableName))
                 return false;
 
             try
             {
-                if (!await TableExistsAsync(context, tableName, ct))
+                if (!await TableExistsAsync(context, tableName))
                     return false;
 
                 var sql = $"SELECT 1 FROM \"{tableName.Replace("\"", "\"\"")}\" LIMIT 1";
 
                 return await context.Database
                     .SqlQueryRaw<int>(sql)
-                    .AnyAsync(ct)
+                    .AnyAsync()
                     .ConfigureAwait(false);
             }
             catch
@@ -364,7 +360,6 @@ namespace MuhasibPro.Data.Database.Extensions
         public static async Task<bool> TableExistsCachedAsync(
             DbContext context,
             string tableName,
-            CancellationToken ct = default,
             bool useCache = true)
         {
             if (!IsValidTableName(tableName))
@@ -375,7 +370,7 @@ namespace MuhasibPro.Data.Database.Extensions
             if (useCache && _tableExistenceCache.TryGetValue(cacheKey, out bool cached))
                 return cached;
 
-            var exists = await TableExistsAsync(context, tableName, ct).ConfigureAwait(false);
+            var exists = await TableExistsAsync(context, tableName).ConfigureAwait(false);
 
             if (useCache && exists)
                 _tableExistenceCache[cacheKey] = exists;

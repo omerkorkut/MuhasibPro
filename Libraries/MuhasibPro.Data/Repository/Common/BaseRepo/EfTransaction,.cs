@@ -16,14 +16,14 @@ namespace MuhasibPro.Data.Repository.Common.BaseRepo
             _onDispose = onDispose ?? throw new ArgumentNullException(nameof(onDispose));
         }
 
-        public async Task CommitAsync(CancellationToken cancellationToken)
+        public async Task CommitAsync()
         {
             if (_isCompleted)
                 throw new InvalidOperationException("Transaction zaten tamamlandı.");
 
             try
             {
-                await _transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                await _transaction.CommitAsync().ConfigureAwait(false);
                 _isCompleted = true;
             }
             catch (Exception ex)
@@ -32,14 +32,14 @@ namespace MuhasibPro.Data.Repository.Common.BaseRepo
             }
         }
 
-        public async Task RollbackAsync(CancellationToken cancellationToken)
+        public async Task RollbackAsync()
         {
             if (_isCompleted)
                 throw new InvalidOperationException("Transaction zaten tamamlandı.");
 
             try
             {
-                await _transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                await _transaction.RollbackAsync().ConfigureAwait(false);
                 _isCompleted = true;
             }
             catch (Exception ex)
