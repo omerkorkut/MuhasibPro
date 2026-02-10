@@ -25,6 +25,6 @@ namespace MuhasibPro.Data.Contracts.Repository.SistemRepos.Authentication
         /// <exception cref="UserNotFoundException">Thrown if the user does not exist.</exception>
         /// <exception cref="InvalidPasswordException">Thrown if the password is invalid.</exception>
         /// <exception cref="Exception">Thrown if the login fails.</exception>
-        Task<Hesap> Login(string username, string password);
+        Task<Kullanici> Login(string username, string password);
     }
 }

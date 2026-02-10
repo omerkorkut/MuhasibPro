@@ -6,31 +6,30 @@ using MuhasibPro.Domain.Entities.SistemEntity;
 
 namespace MuhasibPro.Data.Repository.SistemRepos.Authentication
 {
-    public class UserRepository : BaseRepository<SistemDbContext, Hesap>, IUserRepository
+    public class UserRepository : BaseRepository<SistemDbContext, Kullanici>, IUserRepository
     {
         public UserRepository(SistemDbContext context) : base(context)
         {
         }
 
-        public async Task<Hesap?> GetByEmailAsync(string email)
+        public async Task<Kullanici?> GetByEmailAsync(string email)
         {
             if (email == null)
                 throw new ArgumentNullException("email");
-            return await DbSet
-                .Include(a => a.Kullanici)
-                .Include(a => a.Kullanici.Rol)
-                .FirstOrDefaultAsync(u => u.Kullanici.Eposta == email)
+            return await DbSet                
+                .Include(a => a.Rol)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Eposta == email)                
                 .ConfigureAwait(false);
         }
 
-        public async Task<Hesap?> GetByUsernameAsync(string userName)
+        public async Task<Kullanici?> GetByUsernameAsync(string userName)
         {
             if (userName == null)
                 throw new ArgumentNullException("userName");
-            return await DbSet
-                .Include(a => a.Kullanici)
-                .Include(a => a.Kullanici.Rol)
-                .FirstOrDefaultAsync(u => u.Kullanici.KullaniciAdi == userName)
+            return await DbSet                
+                .Include(a => a.Rol)
+                .FirstOrDefaultAsync(u => u.KullaniciAdi == userName)
                 .ConfigureAwait(false);
         }
     }

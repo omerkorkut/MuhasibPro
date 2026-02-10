@@ -18,7 +18,7 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
         // Kontroller
         
         MaliDonemVarmiKontrolu,
-        DatabaseVarMiKontrolu,
+        
 
         // İşlemler
         
@@ -125,7 +125,7 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
         {
             DeleteCompleted = true;
             SuccessMessage = string.IsNullOrEmpty(message)
-                ? "✅ Veritabanı başarıyla Silindi"
+                ? "✅ Veritabanı başarıyla silindi"
                 : message;
         }
 
@@ -177,7 +177,7 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
 
 
                 //Gerial
-                TenantDeletionStep.VeritabaniSilmeIslemiGeriAl => "Veritabanı silme işlemi tamamlanamadı, Geri alma işlemi başlatıldıl",
+                TenantDeletionStep.VeritabaniSilmeIslemiGeriAl => "Veritabanı silme işlemi tamamlanamadı, Geri alma işlemi başlatıldı",
                 TenantDeletionStep.MaliDonemKaydiSilmeIslemiGeriAl => "Mali Dönem silme işlemi tamamlanamadı, Geri alma işlemi başlatıldı",
 
                 // TAMAMLAMA

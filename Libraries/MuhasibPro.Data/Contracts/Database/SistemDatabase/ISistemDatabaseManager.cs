@@ -9,7 +9,7 @@ namespace MuhasibPro.Data.Contracts.Database.SistemDatabase
         Task<DatabaseConnectionAnalysis> GetSistemDatabaseStateAsync();
         
         Task<(bool isValid, string Message)> ValidateSistemDatabaseAsync();
-
+        (bool isValid, string message) QuickSistemDatabaseTest();
 
     }
 }

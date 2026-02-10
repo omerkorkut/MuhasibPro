@@ -1,6 +1,6 @@
-﻿using MuhasibPro.Business.Contracts.CommonServices;
-using MuhasibPro.Business.Contracts.SistemServices.Authentication;
+﻿using MuhasibPro.Business.Contracts.SistemServices.Authentication;
 using MuhasibPro.Business.Contracts.UIServices;
+using MuhasibPro.Business.Contracts.UIServices.CommonServices;
 using MuhasibPro.Business.DTOModel;
 using MuhasibPro.Business.DTOModel.SistemModel;
 using MuhasibPro.Data.Contracts.Repository.SistemRepos.Authentication;
@@ -49,12 +49,20 @@ namespace MuhasibPro.Business.Services.SistemServices.Authetication
 
         public string GetCurrentUsername => CurrentAccount?.KullaniciModel.KullaniciAdi ?? "App";
 
-        public long GetCurrentUserId => CurrentAccount?.Id ?? -1;
+        public long GetCurrentUserId => CurrentAccount?.KullaniciId ?? -1;
 
         public async Task Login(string username, string password)
         {
             var kullanici = await _authenticator.Login(username, password);
-            CurrentAccount = CreateHesapModel(kullanici,false);
+            var hesapModel = new HesapModel();
+            if (kullanici != null) 
+            {
+                hesapModel.KullaniciModel = CreateKullaniciModel(kullanici,true);
+                hesapModel.KullaniciId = kullanici.Id;
+                hesapModel.SonGirisTarihi = DateTime.UtcNow;
+                CurrentAccount = hesapModel;
+            }
+            
         }
 
         public void Logout()
@@ -76,39 +84,7 @@ namespace MuhasibPro.Business.Services.SistemServices.Authetication
             {
                 throw new Exception("Kullanıcı kaydedilmedi", ex);
             }
-        }
-
-        private HesapModel CreateHesapModel(Hesap source, bool includeAllFields=false)
-        {
-            if(source == null)
-                throw new ArgumentNullException(nameof(source));
-            try
-            {
-                var result = ModelFactory.CreateModelFromEntity<HesapModel, Hesap>(
-                    source,
-                    includeAllFields,
-                    (model, entity, include) =>
-                    {
-                        model.KullaniciId = entity.KullaniciId;
-
-                        model.SonGirisTarihi = entity.SonGirisTarihi;
-                        if(entity.Kullanici != null)
-                        {
-                            model.KullaniciModel = CreateKullaniciModel(entity.Kullanici, includeAllFields: true);
-                        }
-                        if(include && entity.FirmaId > 0)
-                        {
-                            model.FirmaId = entity.FirmaId;
-                        }
-                    });
-                return result;
-            } catch(Exception ex)
-            {
-                // Loglama yapabilirsiniz
-                // _logger.LogError(ex, "Hesap modeli oluşturulurken hata");
-                throw new Exception($"Hesap oluşturulurken hata oluştu: {ex.Message}", ex);
-            }
-        }
+        }    
 
         private KullaniciModel CreateKullaniciModel(Kullanici source, bool includeAllFields=false)
         {
@@ -159,6 +135,7 @@ namespace MuhasibPro.Business.Services.SistemServices.Authetication
                     {
                         model.Aciklama = entity.Aciklama;
                         model.RolAdi = entity.RolAdi;
+                        model.RolTip = entity.RolTip;
                     });
                 return model;
             } catch(Exception)

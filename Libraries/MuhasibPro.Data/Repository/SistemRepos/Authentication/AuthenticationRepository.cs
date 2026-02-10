@@ -10,24 +10,25 @@ namespace MuhasibPro.Data.Repository.SistemRepos.Authentication
     public class AuthenticationRepository : IAuthenticationRepository
     {
         private readonly IUserRepository _userRepository;
-        private readonly IPasswordHasher<Hesap> _passwordHasher;
+        private readonly IPasswordHasher<Kullanici> _passwordHasher;
 
-        public AuthenticationRepository(IUserRepository userRepository, IPasswordHasher<Hesap> passwordHasher)
+        public AuthenticationRepository(IUserRepository userRepository, IPasswordHasher<Kullanici> passwordHasher)
         {
             _userRepository = userRepository;
             _passwordHasher = passwordHasher;
         }
 
-        public async Task<Hesap> Login(string username, string password)
+        public async Task<Kullanici> Login(string username, string password)
         {
-            Hesap kullanici = await _userRepository.GetByUsernameAsync(username).ConfigureAwait(false);
+            Kullanici kullanici = await _userRepository.GetByUsernameAsync(username).ConfigureAwait(false);
+
             if (kullanici == null)
             {
                 throw new UserNotFoundException(username);
             }
             PasswordVerificationResult passwordResult = _passwordHasher.VerifyHashedPassword(
                 kullanici,
-                kullanici.Kullanici.ParolaHash,
+                kullanici.ParolaHash,
                 password);
             if (passwordResult != PasswordVerificationResult.Success)
             {
@@ -47,12 +48,12 @@ namespace MuhasibPro.Data.Repository.SistemRepos.Authentication
             {
                 result = RegistrationResult.PasswordsDoNotMatch;
             }
-            Hesap ePosta = await _userRepository.GetByEmailAsync(email).ConfigureAwait(false);
+            Kullanici ePosta = await _userRepository.GetByEmailAsync(email).ConfigureAwait(false);
             if (ePosta != null)
             {
                 result |= RegistrationResult.EmailAlreadyExists;
             }
-            Hesap kullaniciAdi = await _userRepository.GetByUsernameAsync(username).ConfigureAwait(false);
+            Kullanici kullaniciAdi = await _userRepository.GetByUsernameAsync(username).ConfigureAwait(false);
             if (ePosta != null)
             {
                 result |= RegistrationResult.UsernameAlreadyExists;
@@ -71,18 +72,8 @@ namespace MuhasibPro.Data.Repository.SistemRepos.Authentication
                     KayitTarihi = DateTime.UtcNow,
                     RolId = 1, // Default Role: Admin
                     AktifMi = true,
-                };
-                Hesap hesap = new Hesap
-                {
-                    Id = UIDGenerator.GenerateModuleId(UIDModuleType.Sistem),
-                    KayitTarihi = DateTime.UtcNow,
-                    AktifMi = true,
-                    Kullanici = kullanici,
-                    KullaniciId = kullanici.Id,
-                    SonGirisTarihi = DateTime.UtcNow,
-                    KaydedenId = kullanici.KaydedenId,
-                };
-                await _userRepository.AddAsync(hesap).ConfigureAwait(false);
+                };               
+                await _userRepository.AddAsync(kullanici).ConfigureAwait(false);
             }
             return result;
         }

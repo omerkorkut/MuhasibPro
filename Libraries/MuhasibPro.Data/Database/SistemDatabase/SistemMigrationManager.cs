@@ -19,7 +19,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
         private readonly ISistemBackupManager _backupManager;
         private readonly IApplicationPaths _applicationPaths;
         private static readonly SemaphoreSlim _globalMigrationLock = new SemaphoreSlim(1, 1);
-        private const int LOCK_TIMEOUT_SECONDS = 30; // Max 30 saniye
+        private const int LOCK_TIMEOUT_SECONDS = 30;
 
         private const string _databaseName = DatabaseConstants.SISTEM_DB_NAME;
         private static readonly string[] TablesToCheck =
@@ -33,7 +33,6 @@ namespace MuhasibPro.Data.Database.SistemDatabase
         };
 
         private bool _isSistemDatabaseValid => _applicationPaths.IsSistemDatabaseValid();
-
         private bool _isSistemDatabaseFileExist => _applicationPaths.SistemDatabaseFileExists();
 
         public SistemMigrationManager(
@@ -52,7 +51,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
         {
             try
             {
-                if(!_isSistemDatabaseFileExist)
+                if (!_isSistemDatabaseFileExist)
                 {
                     // ⭐ DATABASE YOK: YENİ OLUŞTUR
                     _logger.LogInformation("Database dosyası bulunamadı, yeni oluşturuluyor: {Database}", _databaseName);
@@ -63,23 +62,22 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                         commandTimeoutMinutes: 5)
                         .ConfigureAwait(false);
 
-                    if(createResult.IsCreatedSuccess)
+                    if (createResult.IsCreatedSuccess)
                     {
-                        // İlk kurulumda version kaydı oluştur
                         await DatabaseVersionFromMigrationsAsync(_dbContext);
-                        return (initializeState: true,message: createResult.Message);
+                        return (initializeState: true, message: createResult.Message);
                     }
 
                     _logger.LogError("Database oluşturma başarısız: {Database}", _databaseName);
-                    return (initializeState: false,message:createResult.Message);
-                } else
+                    return (initializeState: false, message: createResult.Message);
+                }
+                else
                 {
-                    // ⭐ DATABASE VAR: GÜNCELLE
+                    // ⭐ DATABASE VAR: ÖNCE ANALİZ ET
                     _logger.LogInformation(
-                        "Database dosyası mevcut, güncelleme kontrol ediliyor: {Database}",
+                        "Database dosyası mevcut, analiz ediliyor: {Database}",
                         _databaseName);
 
-                    // Önce analiz et (sadece log için)
                     var analysis = await _dbContext.GetConnectionFullStateAsync(
                         databaseName: _databaseName,
                         isDatabaseExists: _isSistemDatabaseFileExist,
@@ -88,14 +86,21 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                         logger: _logger)
                         .ConfigureAwait(false);
 
-                    if(!analysis.CanConnect)
+                    if (!analysis.CanConnect)
                     {
                         _logger.LogError("Database'e bağlanılamıyor: {Database}", _databaseName);
-                        return (initializeState: analysis.CanConnect, message:analysis.Message);
+                        return (initializeState: false, message: analysis.Message);
                     }
 
-                    // Migration uygula
-                    // Local wrapper functions to ensure correct delegate signatures and proper ConfigureAwait usage
+                    // ✅ ANALİZ SONUCUNU LOGLA
+                    _logger.LogInformation(
+                        "Database analizi: {Database}, Tablo: {TableCount}, Pending: {PendingCount}, BackupGerekli: {BackupRequired}",
+                        _databaseName,
+                        analysis.TableCount,
+                        analysis.PendingMigrations?.Count ?? 0,
+                        analysis.ShouldTakeBackupBeforeMigration);
+
+                    // ⭐ MIGRATION UYGULA (ANALİZ PARAMETRESİ İLE)
                     async Task<bool> RestoreWrapper()
                     {
                         return await _backupManager.RestoreFromLatestBackupAsync()
@@ -110,38 +115,44 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                         return res != null && res.IsBackupComleted;
                     }
 
+                    // ✅ YENİ METOD: Analiz parametresi ile çağır
                     var migrationResult = await _dbContext.ExecuteMigrationsWithBackupCheckAsync(
-                        databaseName: _databaseName,
-                        isDatabaseExists: _isSistemDatabaseFileExist,
-                        databaseValid: _isSistemDatabaseValid,
-                        tablesToCheck: TablesToCheck,
+                        analysis: analysis, // ✅ Önceden yapılmış analizi geç
                         restoreAction: RestoreWrapper,
                         backupAction: BackupWrapper,
                         logger: _logger,
-                        commandTimeoutMinutes: 5)
+                        commandTimeoutMinutes: 5) // ✅ HER ZAMAN BACKUP AL
                         .ConfigureAwait(false);
 
-                    if(migrationResult.IsHealthy)
+                    // ⭐ VERSİYONU GÜNCELLE
+                    if (migrationResult.IsSuccess)
                     {
-                        // ⭐ VERSİYONU GÜNCELLE (migration'dan SONRA)
                         await DatabaseVersionFromMigrationsAsync(_dbContext).ConfigureAwait(false);
                     }
 
-                    return  (initializeState: migrationResult.IsHealthy, migrationResult.Message);
+                    // ✅ DETAYLI LOG
+                    _logger.LogInformation(
+                        "Migration sonucu: {Database}, Başarı: {Success}, Backup: {Backup}, Migration: {MigrationApplied}",
+                        _databaseName,
+                        migrationResult.IsSuccess,
+                        migrationResult.BackupTaken,
+                        migrationResult.MigrationApplied);
+
+                    return (initializeState: migrationResult.IsSuccess, migrationResult.Message);
                 }
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Initialize database hatası: {_databaseName}", _databaseName);
+                _logger.LogError(ex, "Initialize database hatası: {Database}", _databaseName);
                 return (initializeState: false, message: ex.Message);
             }
         }
 
         public async Task<(bool initializeState, string message)> InitializeSistemDatabaseAsync()
         {
-            // ⭐ GLOBAL LOCK - tek thread migration
             try
             {
-                if(!await _globalMigrationLock.WaitAsync(TimeSpan.FromSeconds(LOCK_TIMEOUT_SECONDS))
+                if (!await _globalMigrationLock.WaitAsync(TimeSpan.FromSeconds(LOCK_TIMEOUT_SECONDS))
                     .ConfigureAwait(false))
                 {
                     _logger.LogWarning("Migration system is busy, skipping...");
@@ -151,11 +162,13 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 try
                 {
                     return await InternalInitializeAsync().ConfigureAwait(false);
-                } finally
+                }
+                finally
                 {
                     _globalMigrationLock.Release();
                 }
-            } catch(OperationCanceledException ex)
+            }
+            catch (OperationCanceledException ex)
             {
                 _logger.LogInformation(ex, "InitializeSistemDatabaseAsync iptal edildi");
                 return (false, "❌ Sistem veritabanı başlatma işlemi iptal edildi");
@@ -171,7 +184,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 TablesToCheck,
                 _logger)
                 .ConfigureAwait(false);
-            if(result.IsDatabaseExists)
+
+            if (result.IsDatabaseExists)
             {
                 result.DatabaseFileSizeBytes = _applicationPaths.GetSistemDatabaseSize();
             }
@@ -184,11 +198,13 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             {
                 var state = await GetSistemDatabaseStateAsync().ConfigureAwait(false);
                 return state.PendingMigrations;
-            } catch(OperationCanceledException ex)
+            }
+            catch (OperationCanceledException ex)
             {
                 _logger.LogInformation(ex, "GetPendingMigrationsAsync iptal edildi");
                 return new List<string>();
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Bekleyen migration'lar alınamadı: {Database}", _databaseName);
                 return new List<string>();
@@ -204,13 +220,13 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                     .FirstOrDefaultAsync()
                     .ConfigureAwait(false);
 
-                if(versionRecord != null)
+                if (versionRecord != null)
                     return versionRecord.CurrentDatabaseVersion;
 
-                // Version kaydı yoksa state'ten al
                 var state = await GetSistemDatabaseStateAsync().ConfigureAwait(false);
                 return state.CurrentVersion;
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Database versiyonu alınamadı: {Database}", _databaseName);
                 return "1.0.0.0";
@@ -221,10 +237,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             IProgress<AnalysisProgress> progressReporter = null,
             AnalysisOptions options = null)
         {
-            // Progress için fallback
             var progress = progressReporter ?? new Progress<AnalysisProgress>();
-
-            // Options için fallback
             var optionAnalysis = options ??
                 new AnalysisOptions
                 {
@@ -238,7 +251,6 @@ namespace MuhasibPro.Data.Database.SistemDatabase
 
             try
             {
-                // Extension metodunu çağır
                 analysis = await _dbContext.GetDatabaseFullDiagStateAsync(
                     databaseName: _databaseName,
                     isDatabaseExists: _isSistemDatabaseFileExist,
@@ -248,16 +260,15 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                     options: optionAnalysis,
                     logger: _logger);
 
-                // Dosya boyutu backup (extension metod zaten yapıyor ama emin olalım)
                 EnsureFileSizeInfoAsync(analysis);
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Database analizi başarısız");
                 analysis = CreateErrorReport(ex);
             }
 
-            // Hata durumunda temizlik
-            if(analysis.HasError)
+            if (analysis.HasError)
             {
                 await CleanupOnErrorAsync();
             }
@@ -267,16 +278,17 @@ namespace MuhasibPro.Data.Database.SistemDatabase
 
         private void EnsureFileSizeInfoAsync(DatabaseHealtyDiagReport analysis)
         {
-            if(analysis.IsDatabaseExists && analysis.DatabaseFileSizeBytes == 0)
+            if (analysis.IsDatabaseExists && analysis.DatabaseFileSizeBytes == 0)
             {
                 try
                 {
                     var fileSize = _applicationPaths.GetSistemDatabaseSize();
-                    if(fileSize > 0)
+                    if (fileSize > 0)
                     {
                         analysis.DatabaseFileSizeBytes = fileSize;
                     }
-                } catch(Exception ex)
+                }
+                catch (Exception ex)
                 {
                     _logger.LogDebug(ex, "Dosya boyutu bilgisi güncellenemedi");
                 }
@@ -302,10 +314,11 @@ namespace MuhasibPro.Data.Database.SistemDatabase
             try
             {
                 await _dbContext.Database.CloseConnectionAsync();
-                await Task.Delay(100); // Kısa bekleme
-            } catch
+                await Task.Delay(100);
+            }
+            catch
             {
-                // Dispose etmiyoruz, sadece bağlantıyı kapatıyoruz
+                // Dispose etmiyoruz
             }
         }
 
@@ -319,12 +332,11 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                     .ConfigureAwait(false);
 
                 var latestMigration = appliedMigrations.LastOrDefault();
-                if(string.IsNullOrEmpty(latestMigration))
+                if (string.IsNullOrEmpty(latestMigration))
                     return;
 
                 var newVersion = DatabaseUtilityExtensionsHelper.ExtractVersionFromMigration(latestMigration);
 
-                // Transaction başlat
                 await using var transaction = await context.Database
                     .BeginTransactionAsync()
                     .ConfigureAwait(false);
@@ -334,9 +346,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                     .FirstOrDefaultAsync()
                     .ConfigureAwait(false);
 
-                if(versionRecord == null)
+                if (versionRecord == null)
                 {
-                    // AYNI CONTEXT'i kullan
                     var firstVersion = new AppDbVersion
                     {
                         DatabaseName = _databaseName,
@@ -346,12 +357,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                     };
 
                     await context.AppDbVersiyonlar.AddAsync(firstVersion).ConfigureAwait(false);
-
-                    _logger.LogInformation(
-                        "İlk versiyon kaydı oluşturuldu: {Database} - {Version}",
-                        _databaseName,
-                        newVersion);
-                } else
+                }
+                else
                 {
                     versionRecord.PreviousDatabaseVersion = versionRecord.CurrentDatabaseVersion;
                     versionRecord.CurrentDatabaseVersion = newVersion;
@@ -362,11 +369,11 @@ namespace MuhasibPro.Data.Database.SistemDatabase
                 await transaction.CommitAsync().ConfigureAwait(false);
 
                 _logger.LogInformation(
-                    "Database versiyonu güncellendi: {Database} ({Old} → {New})",
+                    "Database versiyonu güncellendi: {Database} → {New}",
                     _databaseName,
-                    versionRecord?.PreviousDatabaseVersion ?? "null",
                     newVersion);
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Database versiyonu güncellenemedi: {Database}", _databaseName);
             }

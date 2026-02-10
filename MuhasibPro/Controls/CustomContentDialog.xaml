@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentDialog
+    x:Class="MuhasibPro.Controls.CustomContentDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    x:Name="RootDialog"
+    Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
+    CornerRadius="10"
+    DefaultButton="Primary"
+    RequestedTheme="Default">
+
+    <ContentDialog.Resources>
+        <Style TargetType="ContentDialog">
+            <Setter Property="Foreground" Value="{ThemeResource ContentDialogForeground}" />
+            <Setter Property="Background" Value="{ThemeResource ContentDialogBackground}" />
+            <Setter Property="BorderThickness" Value="{ThemeResource ContentDialogBorderWidth}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource ContentDialogBorderBrush}" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+    </ContentDialog.Resources>
+
+    <ContentDialog.Title>
+        <Grid>
+            <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                <!--  Success Icon  -->
+                <FontIcon
+                    x:Name="SuccessIcon"
+                    Margin="0,0,12,0"
+                    VerticalAlignment="Center"
+                    FontSize="24"
+                    Foreground="#107C10"
+                    Glyph="&#xE73E;"
+                    Visibility="Collapsed" />
+
+                <!--  Error Icon  -->
+                <FontIcon
+                    x:Name="ErrorIcon"
+                    Margin="0,0,12,0"
+                    VerticalAlignment="Center"
+                    FontSize="24"
+                    Foreground="#D13438"
+                    Glyph="&#xE783;"
+                    Visibility="Collapsed" />
+
+                <!--  Warning Icon  -->
+                <FontIcon
+                    x:Name="WarningIcon"
+                    Margin="0,0,12,0"
+                    VerticalAlignment="Center"
+                    FontSize="24"
+                    Foreground="#FFAA44"
+                    Glyph="&#xE7BA;"
+                    Visibility="Collapsed" />
+
+                <!--  Info Icon  -->
+                <FontIcon
+                    x:Name="InfoIcon"
+                    Margin="0,0,12,0"
+                    VerticalAlignment="Center"
+                    FontSize="24"
+                    Foreground="#0078D4"
+                    Glyph="&#xE946;"
+                    Visibility="Collapsed" />
+
+                <!--  Question Icon  -->
+                <FontIcon
+                    x:Name="QuestionIcon"
+                    Margin="0,0,12,0"
+                    VerticalAlignment="Center"
+                    FontSize="24"
+                    Foreground="#0078D4"
+                    Glyph="&#xE897;"
+                    Visibility="Collapsed" />
+
+                <!--  Edit Icon  -->
+                <FontIcon
+                    x:Name="EditIcon"
+                    Margin="0,0,12,0"
+                    VerticalAlignment="Center"
+                    FontSize="24"
+                    Foreground="#0078D4"
+                    Glyph="&#xE70F;"
+                    Visibility="Collapsed" />
+
+                <TextBlock
+                    x:Name="TitleText"
+                    VerticalAlignment="Center"
+                    FontSize="18"
+                    FontWeight="SemiBold"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </Grid>
+    </ContentDialog.Title>
+</ContentDialog>

@@ -16,7 +16,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
     {
         private readonly IAppDbContextFactory _dbContextFactory;
         private readonly ILogger<TenantSQLiteMigrationManager> _logger;
-        private readonly ITenantSQLieBackupManager _backupManager;
+        private readonly ITenantSQLiteBackupManager _backupManager;
         private readonly IApplicationPaths _applicationPaths;
         private static readonly SemaphoreSlim _globalMigrationLock = new SemaphoreSlim(1, 1);
         private const int LOCK_TIMEOUT_SECONDS = 30; // Max 30 saniye
@@ -25,7 +25,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
         public TenantSQLiteMigrationManager(
             IAppDbContextFactory dbContextFactory,
             ILogger<TenantSQLiteMigrationManager> logger,
-            ITenantSQLieBackupManager backupManager,
+            ITenantSQLiteBackupManager backupManager,
             IApplicationPaths applicationPaths)
         {
             _dbContextFactory = dbContextFactory;
@@ -83,7 +83,7 @@ namespace MuhasibPro.Data.Database.TenantDatabase
                         return res != null && res.IsBackupComleted;
                     }
                     using var _dbContext = _dbContextFactory.CreateDbContext(databaseName);
-                    var migrationResult = await _dbContext.ExecuteMigrationsWithBackupCheckAsync(
+                    var migrationResult = await _dbContext.ExecuteTenantMigrationsWithBackupCheckAsync(
                         databaseName: databaseName,
                         isDatabaseExists: analysis.IsDatabaseExists,
                         databaseValid: analysis.DatabaseValid,

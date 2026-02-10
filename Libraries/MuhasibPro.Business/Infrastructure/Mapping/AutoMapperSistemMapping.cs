@@ -4,7 +4,7 @@ using MuhasibPro.Business.DTOModel.SistemModel;
 using MuhasibPro.Domain.Entities;
 using MuhasibPro.Domain.Entities.SistemEntity;
 
-namespace Muhasib.Business.Mapping;
+namespace MuhasibPro.Business.Infrastructure.Mapping;
 
 public class AutoMapperSistemMapping : Profile
 {

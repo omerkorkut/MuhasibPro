@@ -1,6 +1,6 @@
-﻿using MuhasibPro.Business.Contracts.CommonServices;
-using MuhasibPro.Business.Contracts.SistemServices.Authentication;
+﻿using MuhasibPro.Business.Contracts.SistemServices.Authentication;
 using MuhasibPro.Business.Contracts.SistemServices.LogServices;
+using MuhasibPro.Business.Contracts.UIServices.CommonServices;
 using MuhasibPro.Business.DTOModel.SistemModel;
 using MuhasibPro.Data.Contracts.Repository.Common;
 using MuhasibPro.Domain.Common;

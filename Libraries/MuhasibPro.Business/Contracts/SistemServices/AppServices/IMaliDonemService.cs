@@ -17,7 +17,7 @@ namespace MuhasibPro.Business.Contracts.SistemServices.AppServices
         Task<bool> IsMaliDonemAnyAsync();
         Task<bool> IsMaliDonemExistsAsync(long firmaId, int maliYil);
         Task<ApiDataResponse<MaliDonemModel>> CreateNewMaliDonemForFirmaAsync(long firmaId);
-
+        Task<ApiDataResponse<IList<MaliDonemModel>>> GetMaliDonemlerWithFirmaId(DataRequest<MaliDonem> request, long firmaId);
 
     }
 }

@@ -1,10 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MuhasibPro.Domain.Entities.SistemEntity;
 
 [Table("Hesaplar")]
-public class Hesap : BaseEntity
+public class Hesap
 {
+    
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public long KullaniciId { get; set; }
     public long? FirmaId { get; set; }    
     public DateTime SonGirisTarihi { get; set; }

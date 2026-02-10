@@ -10,7 +10,7 @@ namespace MuhasibPro.Data.Contracts.Repository.SistemRepos.Authentication
 
         event Action StateChanged;
         void Logout();
-        Task<Hesap> Login(string username, string password);
+        Task<Kullanici> Login(string username, string password);
         Task<RegistrationResult> Register(
             string email,
             string username,

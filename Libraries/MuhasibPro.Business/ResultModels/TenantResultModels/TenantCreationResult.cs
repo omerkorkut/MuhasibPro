@@ -178,28 +178,28 @@ namespace MuhasibPro.Business.ResultModels.TenantResultModels
             return step switch
             {
                 // BAŞLANGIÇ
-                TenantCreationStep.IslemBaslatildi => "⏳ İşlem Başlatıldı",
+                TenantCreationStep.IslemBaslatildi => "İşlem Başlatıldı",
                 
 
                 // VALİDASYON
-                TenantCreationStep.FirmaBilgileriKontrolu => " 🗃️ Firma Bilgileri Kontrol Ediliyor",
-                TenantCreationStep.MaliYilGecerlilikKontrolu => "🧮 Mali Yıl Geçerliliği Kontrol Ediliyor",
-                TenantCreationStep.MaliDonemZatenVarMiKontrolu => $"🟢 Mali Dönem Kontrol Ediliyor",
-                TenantCreationStep.MaliDonemZatenVar => $"🟢 Oluşturmak İstediğiniz Mali Dönem Zaten Var.",
+                TenantCreationStep.FirmaBilgileriKontrolu => "Firma Bilgileri Kontrol Ediliyor",
+                TenantCreationStep.MaliYilGecerlilikKontrolu => "Mali Yıl Geçerliliği Kontrol Ediliyor",
+                TenantCreationStep.MaliDonemZatenVarMiKontrolu => $"Mali Dönem Kontrol Ediliyor",
+                TenantCreationStep.MaliDonemZatenVar => $"Oluşturmak İstediğiniz Mali Dönem Zaten Var.",
 
                 // İşlemler
                 
-                TenantCreationStep.VeritabaniAdiOlusturuluyor => "📝 Veritabanı Adı Oluşturuluyor",
-                TenantCreationStep.MaliDonemKaydiOlusturuluyor => "➕ Mali Dönem Kaydı Oluşturuluyor",
-                TenantCreationStep.VeritabaniDosyasiOlusturuluyor => "🔗 Veritabanı Dosyası Oluşturuluyor",
+                TenantCreationStep.VeritabaniAdiOlusturuluyor => "Veritabanı Adı Oluşturuluyor",
+                TenantCreationStep.MaliDonemKaydiOlusturuluyor => "Mali Dönem Kaydı Oluşturuluyor",
+                TenantCreationStep.VeritabaniDosyasiOlusturuluyor => "Veritabanı Dosyası Oluşturuluyor",
 
 
                 // İşlem Sonucları
              
-                TenantCreationStep.TumIslemlerTamamlandi => "✅ Tüm İşlemler Tamamlandı",
+                TenantCreationStep.TumIslemlerTamamlandi => "Tüm İşlemler Tamamlandı",
 
         
-                TenantCreationStep.TumIslemlerGeriAlindi => "❌ Yapısal bütünlük sağlanamadı, Tüm işlemler geri alındı",
+                TenantCreationStep.TumIslemlerGeriAlindi => "Yapısal bütünlük sağlanamadı, Tüm işlemler geri alındı",
                 
                 TenantCreationStep.BeklenmeyenHata => "❗ Beklenmeyen Hata",
 

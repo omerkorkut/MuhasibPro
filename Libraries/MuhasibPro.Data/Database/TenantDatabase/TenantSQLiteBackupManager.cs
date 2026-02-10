@@ -9,7 +9,7 @@ using MuhasibPro.Domain.Models.DatabaseResultModel;
 
 namespace MuhasibPro.Data.Database.TenantDatabase
 {
-    public class TenantSQLiteBackupManager : ITenantSQLieBackupManager
+    public class TenantSQLiteBackupManager : ITenantSQLiteBackupManager
     {
         private readonly IApplicationPaths _applicationPaths;
         private readonly ILogger<TenantSQLiteBackupManager> _logger;

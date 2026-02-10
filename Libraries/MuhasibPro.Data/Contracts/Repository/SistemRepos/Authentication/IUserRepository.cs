@@ -3,10 +3,10 @@ using MuhasibPro.Domain.Entities.SistemEntity;
 
 namespace MuhasibPro.Data.Contracts.Repository.SistemRepos.Authentication
 {
-    public interface IUserRepository : IRepository<Hesap>
+    public interface IUserRepository : IRepository<Kullanici>
     {
-        Task<Hesap?> GetByEmailAsync(string email);
-        Task<Hesap?> GetByUsernameAsync(string userName);
+        Task<Kullanici?> GetByEmailAsync(string email);
+        Task<Kullanici?> GetByUsernameAsync(string userName);
 
 
     }

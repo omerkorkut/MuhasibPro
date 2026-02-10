@@ -310,7 +310,35 @@ namespace MuhasibPro.Business.Services.SistemServices.AppServices
                     message: $"[HATA] ❌ Mali Dönem silme işlemi başarısız oldu! => {ex.Message}");
             }
         }
-
+        public async Task<ApiDataResponse<IList<MaliDonemModel>>> GetMaliDonemlerWithFirmaId(DataRequest<MaliDonem> request, long firmaId)
+        {
+            var models = new List<MaliDonemModel>();
+            try
+            {
+                var items = _maliDonemRepository.GetQuery(request);
+                if (items == null)
+                {
+                    return new ErrorApiDataResponse<IList<MaliDonemModel>>(data: models, message: "Kayıt bulunamadı");
+                }
+                if (items != null)
+                {
+                    var maliDonem = items.Where(r => r.FirmaId == firmaId);
+                    foreach (var item in maliDonem)
+                    {
+                        var donem = await MaliDonemServiceExtensions.CreateMaliDonemModelAsync(item, true, _bitmapToolsService);
+                        if (donem != null)
+                            models.Add(donem);
+                    }
+                }
+                return new SuccessApiDataResponse<IList<MaliDonemModel>>(data: models, message: "Kayıt Listeleme başarılı");
+            }
+            catch (Exception ex)
+            {
+                await LogExceptionAsync(nameof(GetMaliDonemlerWithFirmaId), ex);
+                return new ErrorApiDataResponse<IList<MaliDonemModel>>(data: models, message: $"[HATA]: {ex.Message}");
+            }
+        }
+        
         private async Task LogExceptionAsync(string methodName, Exception ex)
         { await _logService.SistemLogService.SistemLogExceptionAsync(nameof(MaliDonemService), methodName, ex); }
     }

@@ -10,10 +10,10 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
 {
     public class TenantSQLiteDatabaseOperationService : ITenantSQLiteDatabaseOperationService
     {
-        private readonly ITenantSQLieBackupManager _backupManager;
+        private readonly ITenantSQLiteBackupManager _backupManager;
         private readonly ISistemLogService _logService;
 
-        public TenantSQLiteDatabaseOperationService(ITenantSQLieBackupManager backupManager, ISistemLogService logService)
+        public TenantSQLiteDatabaseOperationService(ITenantSQLiteBackupManager backupManager, ISistemLogService logService)
         {
             _backupManager = backupManager;
             _logService = logService;

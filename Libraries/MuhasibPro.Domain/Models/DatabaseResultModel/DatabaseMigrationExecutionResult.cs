@@ -7,6 +7,7 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
         public int AppliedMigrationsCount { get; set; }
         public List<string> PendingMigrations { get; set; } = new();
         public bool DatabaseValid { get; set; }
+        public bool BackupTaken { get; set; } // ✅ YENİ: Backup alındı mı?
         public override bool IsUpdateRequired => PendingMigrations.Any();
         public bool IsRolledBack { get; set; }
         public override string OperationDisplayName => "Güncelleme";
@@ -16,24 +17,38 @@ namespace MuhasibPro.Domain.Models.DatabaseResultModel
             if (HasError) return DatabaseStatusResult.UnknownError;
             if (!CanConnect) return DatabaseStatusResult.ConnectionFailed;
             if (!DatabaseValid) return DatabaseStatusResult.InvalidSchema;
+            if (IsRolledBack) return DatabaseStatusResult.RestoreCompleted;
 
-            return DatabaseStatusResult.Healty;
+            return IsUpdateRequired ? DatabaseStatusResult.RequiredUpdating : DatabaseStatusResult.Healty;
         }
 
         public override string GetStatusMessage()
         {
             if (HasError)
             {
-                // Eğer hata varsa ve sistem otomatik geri yükleme yaptıysa:
                 if (IsRolledBack)
-                    return $"Kritik bir hata oluştu: {Message}. Sistem otomatik olarak kararlı yedek durumuna geri döndürüldü. (Safe Mode)";
+                    return $"Kritik bir hata oluştu: {Message}. Sistem otomatik olarak yedekten geri yüklendi.";
 
                 return $"Güncelleme başarısız: {Message}. Lütfen manuel bir yedek kontrolü yapın.";
             }
 
-            return AppliedMigrationsCount > 0
+            string baseMessage = IsUpdateRequired
                 ? $"{AppliedMigrationsCount} yeni güncelleme başarıyla veritabanına işlendi."
                 : "Veritabanı zaten en son sürümde, işlem yapılmadı.";
+
+            // Backup alındıysa ekle
+            if (BackupTaken)
+            {
+                baseMessage += " (Yedek alındı)";
+            }
+
+            return baseMessage;
         }
+
+        // ✅ YENİ: Migration uygulandı mı?
+        public bool MigrationApplied => AppliedMigrationsCount > 0 && !HasError;
+
+        // ✅ YENİ: İşlem başarılı mı?
+        public bool IsSuccess => !HasError && CanConnect && DatabaseValid;
     }
 }

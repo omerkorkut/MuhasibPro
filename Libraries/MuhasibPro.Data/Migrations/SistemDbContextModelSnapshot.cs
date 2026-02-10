@@ -15,7 +15,7 @@ namespace MuhasibPro.Data.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.11");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.12");
 
             modelBuilder.Entity("MuhasibPro.Domain.Entities.SistemEntity.AppVersion", b =>
                 {
@@ -143,41 +143,23 @@ namespace MuhasibPro.Data.Migrations
 
             modelBuilder.Entity("MuhasibPro.Domain.Entities.SistemEntity.Hesap", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<long>("KullaniciId")
                         .HasColumnType("INTEGER");
-
-                    b.Property<bool>("AktifMi")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ArananTerim")
-                        .HasColumnType("TEXT");
 
                     b.Property<long?>("FirmaId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime?>("GuncellemeTarihi")
-                        .HasColumnType("TEXT");
-
-                    b.Property<long?>("GuncelleyenId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("KaydedenId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("KayitTarihi")
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("KullaniciId")
+                    b.Property<long>("KullaniciId1")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("SonGirisTarihi")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("Id");
+                    b.HasKey("KullaniciId");
 
                     b.HasIndex("FirmaId");
 
-                    b.HasIndex("KullaniciId");
+                    b.HasIndex("KullaniciId1");
 
                     b.ToTable("Hesaplar");
                 });
@@ -253,7 +235,7 @@ namespace MuhasibPro.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = 241341L,
+                            Id = 5413300800L,
                             Adi = "Ömer",
                             AktifMi = true,
                             ArananTerim = "korkutomer, Ömer Korkut, Yönetici",
@@ -262,7 +244,7 @@ namespace MuhasibPro.Data.Migrations
                             KayitTarihi = new DateTime(2025, 3, 12, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             KullaniciAdi = "korkutomer",
                             ParolaHash = "AQAAAAIAAYagAAAAECnYdlrjFiWFJc+FGeGDmvR87uz20oU/Z0K4JE9ddoF2VUnmHw0idEFX8UPOb4cpzQ==",
-                            RolId = 1L,
+                            RolId = 241341L,
                             Soyadi = "Korkut",
                             Telefon = "0 (541) 330 0800"
                         });
@@ -299,7 +281,7 @@ namespace MuhasibPro.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("RolTuru")
+                    b.Property<int>("RolTip")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -309,13 +291,23 @@ namespace MuhasibPro.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = 1L,
-                            Aciklama = "Sistemin tüm özelliklerine erişim yetkisi.",
+                            Id = 241341L,
+                            Aciklama = "Sistemi yönetme yetkisine sahip kullanıcı rolü",
                             AktifMi = true,
                             KaydedenId = 5413300800L,
                             KayitTarihi = new DateTime(2025, 3, 12, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             RolAdi = "Yönetici",
-                            RolTuru = 1
+                            RolTip = 1
+                        },
+                        new
+                        {
+                            Id = 241342L,
+                            Aciklama = "Sistemi sınırlı şekilde kullanma yetkisine sahip kullanıcı rolü",
+                            AktifMi = true,
+                            KaydedenId = 5413300800L,
+                            KayitTarihi = new DateTime(2025, 3, 12, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            RolAdi = "Kullanıcı",
+                            RolTip = 2
                         });
                 });
 
@@ -459,7 +451,7 @@ namespace MuhasibPro.Data.Migrations
 
                     b.HasOne("MuhasibPro.Domain.Entities.SistemEntity.Kullanici", "Kullanici")
                         .WithMany()
-                        .HasForeignKey("KullaniciId")
+                        .HasForeignKey("KullaniciId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -471,7 +463,7 @@ namespace MuhasibPro.Data.Migrations
                     b.HasOne("MuhasibPro.Domain.Entities.SistemEntity.KullaniciRol", "Rol")
                         .WithMany()
                         .HasForeignKey("RolId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Rol");

@@ -16,6 +16,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MuhasibPro.Business", "Libr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MuhasibPro", "MuhasibPro\MuhasibPro.csproj", "{FDE82184-EAC3-4322-8113-E82150543780}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MuhasibPro.ViewModels", "Libraries\MuhasibPro.ViewModels\MuhasibPro.ViewModels.csproj", "{351CE10E-0EB5-4505-BF26-EB3F2A28AC01}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,6 +42,10 @@ Global
 		{FDE82184-EAC3-4322-8113-E82150543780}.Release|Any CPU.ActiveCfg = Release|x64
 		{FDE82184-EAC3-4322-8113-E82150543780}.Release|Any CPU.Build.0 = Release|x64
 		{FDE82184-EAC3-4322-8113-E82150543780}.Release|Any CPU.Deploy.0 = Release|x64
+		{351CE10E-0EB5-4505-BF26-EB3F2A28AC01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{351CE10E-0EB5-4505-BF26-EB3F2A28AC01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{351CE10E-0EB5-4505-BF26-EB3F2A28AC01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{351CE10E-0EB5-4505-BF26-EB3F2A28AC01}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -48,6 +54,7 @@ Global
 		{A0B5CCDD-279B-DBEF-5AAB-A1540A772C23} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{ECF4D4DB-63A6-4E90-A00B-331F77376F78} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{C6FE64CC-4F29-415C-B0F8-5D7F34796DEF} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{351CE10E-0EB5-4505-BF26-EB3F2A28AC01} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F4E2FB6F-239E-4588-9E24-0A8A15EC7F12}

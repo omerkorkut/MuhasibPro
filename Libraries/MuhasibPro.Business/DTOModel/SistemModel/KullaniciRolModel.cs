@@ -6,6 +6,6 @@ namespace MuhasibPro.Business.DTOModel.SistemModel
     {
         public string RolAdi { get; set; }
         public string Aciklama { get; set; }
-        public KullaniciRolEnum RolTuru { get; set; }
+        public KullaniciRolTip RolTip { get; set; }
     }
 }

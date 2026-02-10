@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MuhasibPro.Data.DataContext.Configurations;
+using MuhasibPro.Data.DataContext.SeedDataSistem;
 using MuhasibPro.Domain.Entities.SistemEntity;
 
 namespace MuhasibPro.Data.DataContext
@@ -16,37 +17,34 @@ namespace MuhasibPro.Data.DataContext
         {
             SeedUser(modelBuilder);
             SeedInitialVersion(modelBuilder);
+            
 
             modelBuilder.ApplyConfiguration(new MaliDonemConfiguration());
+            modelBuilder.ApplyConfiguration(new KullanicilarConfiguration());
+
+            modelBuilder.Entity<Hesap>()
+                .HasKey(h => h.KullaniciId);
         }
         private void SeedUser(ModelBuilder modelBuilder)
-        {
+        {            
             var yonetici = new Kullanici
             {
-                Id = 241341,
+                Id = 5413300800,
                 Adi = "Ömer",
                 AktifMi = true,
                 Eposta = "korkutomer@gmail.com",
                 KaydedenId = 5413300800,
                 KayitTarihi = new DateTime(2025, 03, 12),
-                RolId = 1,
+                RolId = 241341,
                 KullaniciAdi = "korkutomer",
                 ParolaHash = "AQAAAAIAAYagAAAAECnYdlrjFiWFJc+FGeGDmvR87uz20oU/Z0K4JE9ddoF2VUnmHw0idEFX8UPOb4cpzQ==",
                 Soyadi = "Korkut",
                 Telefon = "0 (541) 330 0800",
                 ArananTerim = "korkutomer, Ömer Korkut, Yönetici"
             };
-            var adminRol = new KullaniciRol
-            {
-                Id = 1,
-                RolAdi = "Yönetici",
-                RolTuru = KullaniciRolEnum.Admin,
-                Aciklama = "Sistemin tüm özelliklerine erişim yetkisi.",
-                KayitTarihi = yonetici.KayitTarihi,
-                KaydedenId = yonetici.KaydedenId,
-            };
             modelBuilder.Entity<Kullanici>().HasData(yonetici);
-            modelBuilder.Entity<KullaniciRol>().HasData(adminRol);
+            SeedDataKullaniciRol.SeedKullaniciRoller(modelBuilder);
+
         }
         private void SeedInitialVersion(ModelBuilder modelBuilder)
         {

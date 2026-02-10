@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using MuhasibPro.Business.Contracts.DatabaseServices.TenantDatabaseServices;
+using MuhasibPro.Business.Contracts.DatabaseServices.TenantDatabaseServices.Common;
 using MuhasibPro.Business.Contracts.SistemServices.AppServices;
 using MuhasibPro.Business.Contracts.SistemServices.LogServices;
 using MuhasibPro.Business.ResultModels.TenantResultModels;
@@ -20,8 +21,11 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
         private readonly IFirmaService _firmaService;
         private readonly ILogger<TenantSQLiteDatabaseService> _logger;
         private readonly IApplicationPaths _applicationPaths;
-        private readonly ITenantSQLiteCommonService _commonService;
-
+        private readonly ITenantSQLiteDatabaseLifecycleService _lifecycleService;
+        private readonly ITenantSQLiteSelectionService _selectionService;
+        private readonly IMaliDonemSagaStep _maliDonemSaga;
+        private readonly ITenantDatabaseSagaStep _tenantDatabaseSagaStep;
+        private readonly ITenantSQLiteDatabaseSelectedDetailService _tenantDetailService;
 
         public TenantSQLiteDatabaseService(
             ILogService logService,
@@ -30,7 +34,12 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
             ILogger<TenantSQLiteDatabaseService> logger,
             IUnitOfWork<SistemDbContext> unitOfWork,
             IApplicationPaths applicationPaths,
-            ITenantSQLiteCommonService commonService)
+
+            ITenantSQLiteDatabaseLifecycleService lifecycleService,
+            ITenantSQLiteSelectionService selectionService,
+            IMaliDonemSagaStep maliDonemSaga,
+            ITenantDatabaseSagaStep tenantDatabaseSagaStep,
+            ITenantSQLiteDatabaseSelectedDetailService tenantDetailService)
         {
             _logService = logService;
             _maliDonemService = maliDonemService;
@@ -38,7 +47,12 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
             _logger = logger;
 
             _applicationPaths = applicationPaths;
-            _commonService = commonService;
+
+            _lifecycleService = lifecycleService;
+            _selectionService = selectionService;
+            _maliDonemSaga = maliDonemSaga;
+            _tenantDatabaseSagaStep = tenantDatabaseSagaStep;
+            _tenantDetailService = tenantDetailService;
         }
 
         public async Task<ApiDataResponse<TenantCreationResult>> CreateNewTenantDatabaseAsync(
@@ -56,6 +70,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                 DatabaseName = request.DatabaseName,
                 CreateCompleted = false,
             };
+            result.StartStep(TenantCreationStep.IslemBaslatildi);
             var saga = new TenantOperationSaga(_logger);
             if (request.FirmaId <= 0)
                 return ApiDataExtensions.ErrorResponse(result, "Firma Id geçersiz");
@@ -73,7 +88,6 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
             result.MaliYil = request.MaliYil;
             result.CompleteStep(CreationStepStatus.Tamamlandi, maliYilResponse.Message);
 
-
             result.StartStep(TenantCreationStep.MaliDonemZatenVarMiKontrolu);
             var maliDonemExist = await _maliDonemService.ValidateMaliDonemExistsAsync(request.FirmaId, result.MaliYil);
             if (!maliDonemExist.Success)
@@ -82,10 +96,8 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                 result.MarkAsError(maliDonemExist.Message);
                 return new ErrorApiDataResponse<TenantCreationResult>(data: result, message: maliDonemExist.Message);
             }
-            result.CompleteStep(CreationStepStatus.Calisiyor, "Mali Dönem kontrolü tamamlandı, İşlem devam ediyor");
-
-            result.StartStep(TenantCreationStep.IslemBaslatildi);
-
+            result.CompleteStep(CreationStepStatus.Tamamlandi, "Mali Dönem kontrolü tamamlandı");
+            
             try
             {
                 // Firma Validasyon
@@ -135,7 +147,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                 // Mali Dönem Kaydı
                 result.StartStep(TenantCreationStep.MaliDonemKaydiOlusturuluyor);
 
-                var maliDonem = await _commonService.MaliDonemSagaStep.CreateNewMaliDonemAsync(saga, request);
+                var maliDonem = await _maliDonemSaga.CreateNewMaliDonemAsync(saga, request);
                 if (!maliDonem.Success || maliDonem.Data == null)
                 {
                     result.CompleteStep(CreationStepStatus.Hata, maliDonem.Message);
@@ -155,7 +167,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                 {
                     result.StartStep(TenantCreationStep.VeritabaniDosyasiOlusturuluyor);
 
-                    var maliVeritabani = await _commonService.TenantDatabaseSagaStep
+                    var maliVeritabani = await _tenantDatabaseSagaStep
                         .CreateTenantDatabaseAsync(saga, result.DatabaseName);
                     if (!maliVeritabani.Success || maliVeritabani.Data == null)
                     {
@@ -181,15 +193,14 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                             "Veritabanı oluşturma işlemi atlandı, sadece Mali Dönem kaydı oluşturuldu.");
                 }
 
-                result.StartStep(TenantCreationStep.TumIslemlerTamamlandi);
                 result.CreateCompleted = true;
-                result.MarkAsSuccess($"✅ {firmaResponse.Data.KisaUnvani} - {result.MaliYil} mali dönemi oluşturuldu");
-                if (request.AutoCreateDatabase)
-                    result.CompleteStep(CreationStepStatus.Tamamlandi, "Veritabanı başarıyla oluşturuldu");
+                result.CompleteStep(CreationStepStatus.Tamamlandi,"Veritabanı ve mali dönem başarıyla oluşturuldu");
+                result.MarkAsSuccess($"{firmaResponse.Data.KisaUnvani} - {result.MaliYil} mali dönemi oluşturuldu");
+                
 
                 return new SuccessApiDataResponse<TenantCreationResult>(
                     data: result,
-                    message: $"✅ {firmaResponse.Data.KisaUnvani} - {result.MaliYil} mali dönemi oluşturuldu");
+                    message: $"{firmaResponse.Data.KisaUnvani} - {result.MaliYil} mali dönemi oluşturuldu");
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -237,30 +248,34 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                 result.MarkAsError($"Gönderilen Mali Dönem Id : '{request.MaliDonemId}' , {maliDonemIDNull} ");
                 return ApiDataExtensions.ErrorResponse(result, maliDonemIDNull);
             }
+            result.CompleteStep(DeletionStepStatus.Tamamlandi, "Mali Dönem doğrulaması tamamlandı");
             if (request.DatabaseName == null)
             {
                 result.CompleteStep(DeletionStepStatus.Hata, databaseNameNull);
                 result.MarkAsError($"Gönderilen veritabanı : '{request.DatabaseName}', {databaseNameNull} ");
                 return ApiDataExtensions.ErrorResponse(result, databaseNameNull);
             }
-            var maliDonemResponse = await _commonService.TenantSQLiteDatabaseSelectedDetailService
+            result.CompleteStep(DeletionStepStatus.Tamamlandi, "Veritabanı adı doğrulaması tamamlandı");
+            var maliDonemResponse = await _tenantDetailService
                 .GetTenantDetailsAsync(request.MaliDonemId);
+            result.CompleteStep(DeletionStepStatus.Calisiyor, maliDonemResponse.Message);
             if (!maliDonemResponse.Success || maliDonemResponse.Data.DatabaseName != request.DatabaseName)
             {
                 var message = maliDonemResponse.Message;
                 result.CompleteStep(DeletionStepStatus.Hata, message);
                 result.MarkAsError(message);
                 return ApiDataExtensions.ErrorResponse(result, message);
-            }
+            }result.CompleteStep(DeletionStepStatus.Tamamlandi, "Mali Dönem detayları doğrulandı, silme işlemi devam ediyor");
             result.MaliDonemId = maliDonemResponse.Data.MaliDonemId;
             result.DatabaseName = maliDonemResponse.Data.DatabaseName;
             try
             {
                 if (request.IsDeleteDatabase)
                 {
+                    result.CompleteStep(DeletionStepStatus.Calisiyor, "Veritabanı silme işlemi başlatıldı");
                     result.StartStep(TenantDeletionStep.VeritabaniDosyasiSiliniyor);
 
-                    var deletingDatabaseResponse = await _commonService.TenantDatabaseSagaStep
+                    var deletingDatabaseResponse = await _tenantDatabaseSagaStep
                         .DeleteTenantDatabaseAsync(saga, request);
                     if (!deletingDatabaseResponse.Success || !deletingDatabaseResponse.Data.DatabaseDeleted)
                     {
@@ -271,9 +286,10 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                     }
                     var response = deletingDatabaseResponse.Data;
                     result.DatabaseDeleted = response.DatabaseDeleted;
+                    result.CompleteStep(DeletionStepStatus.Tamamlandi, deletingDatabaseResponse.Message);
 
                     if (request.IsCurrentTenantDeletingBeforeBackup)
-                    {
+                    {                    
                         result.StartStep(TenantDeletionStep.VeritabaniSilmedenOnceYedekAliniyor);
                         if (response.BackupCreateCompleted)
                         {
@@ -291,26 +307,40 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                             result.CompleteStep(DeletionStepStatus.Hata, "Veritabanı yedek alma işlemi başarısız");
                             result.MarkAsError(deletingDatabaseResponse.Message);
                         }
+                        
                     }
+                    else
+                    {
+                        result.CompleteStep(DeletionStepStatus.Uyari, "Veritabanı silmeden önce yedek alma işlemi kullanıcı tarafından atlandı");
+                    }
+
                     if (request.DeleteAllTenantBackup)
                     {
-                        result.StartStep(TenantDeletionStep.VeritabaniYedekleriSiliniyor);
-                        if (response.BackupDeleteCompleted)
+                        if (result.DeletedBackupFiles.Count > 0)
                         {
-                            result.BackupDeleteCompleted = response.BackupDeleteCompleted;
-                            result.DeletedBackupCount = response.DeletedBackupCount;
-                            result.DeletedBackupFiles = response.DeletedBackupFiles;
-                            result.CompleteStep(DeletionStepStatus.Tamamlandi, "Veritabanı yedekleri başarıyla silindi");
-                            result.MarkAsSuccess("Veritabanı yedekleri başarıyla silindi");
+                            result.StartStep(TenantDeletionStep.VeritabaniYedekleriSiliniyor);
+                            if (response.BackupDeleteCompleted)
+                            {
+                                result.BackupDeleteCompleted = response.BackupDeleteCompleted;
+                                result.DeletedBackupCount = response.DeletedBackupCount;
+                                result.DeletedBackupFiles = response.DeletedBackupFiles;
+                                result.CompleteStep(DeletionStepStatus.Tamamlandi, "Veritabanı yedekleri başarıyla silindi");
+                                result.MarkAsSuccess("Veritabanı yedekleri başarıyla silindi");
+                            }
+                            else
+                            {
+                                result.BackupDeleteCompleted = false;
+                                result.DeletedBackupCount = 0;
+                                result.DeletedBackupFiles = null;
+                                result.CompleteStep(DeletionStepStatus.Hata, "Veritabanı yedekleri silme işlemi başarısız");
+                                result.MarkAsError(deletingDatabaseResponse.Message);
+                            }
                         }
-                        else
-                        {
-                            result.BackupDeleteCompleted = false;
-                            result.DeletedBackupCount = 0;
-                            result.DeletedBackupFiles = null;
-                            result.CompleteStep(DeletionStepStatus.Hata, "Veritabanı yedekleri silme işlemi başarısız");
-                            result.MarkAsError(deletingDatabaseResponse.Message);
-                        }
+                        result.CompleteStep(DeletionStepStatus.Tamamlandi, "Silinecek veritabanı yedeği bulunamadı");
+                    }
+                    else
+                    {
+                        result.CompleteStep(DeletionStepStatus.Uyari, "Veritabanı yedeklerini silme işlemi kullanıcı tarafından atlandı");
                     }
                 }
                 else
@@ -330,7 +360,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                 if (request.IsDeleteMaliDonem)
                 {
                     result.StartStep(TenantDeletionStep.MaliDonemKaydiSiliniyor);
-                    var deleteMaliDonemRecord = await _commonService.MaliDonemSagaStep
+                    var deleteMaliDonemRecord = await _maliDonemSaga
                         .DeleteMaliDonemAsync(saga, request);
                     if (!deleteMaliDonemRecord.Success || !deleteMaliDonemRecord.Data.MaliDonemDeleted)
                     {
@@ -343,6 +373,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                     if (response.MaliDonemDeleted)
                     {
                         result.MaliDonemDeleted = true;
+                        result.CompleteStep(DeletionStepStatus.Tamamlandi, deleteMaliDonemRecord.Message);
                     }
                 }
                 else
@@ -358,13 +389,10 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                         "Mali Dönem kaydı silme işlemi kullanıcı tarafından atlandı");
                 }
 
-                result.StartStep(TenantDeletionStep.TumIslemlerTamamlandi);
+                result.CompleteStep(DeletionStepStatus.Tamamlandi, "Silme işlemi başarıyla tamamlandı");
                 result.DeleteCompleted = true;
-
-                string resultMessage = "";
-                if (result.DatabaseDeleted) resultMessage += "Veritabanı başarıyla silindi.";
-                if (result.MaliDonemDeleted) resultMessage += "Mali Dönem Kaydı başarıyla silindi.";
-                result.MarkAsSuccess(resultMessage.Trim());
+              
+                result.MarkAsSuccess("Silme işlemi başarılı");
                 return ApiDataExtensions.SuccessResponse(result, "Silme işlemi başarıyla tamamlandı");
             }
             catch (Exception ex)
@@ -382,15 +410,15 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
         }
 
 
-        public Task<ApiDataResponse<DatabaseConnectionAnalysis>> GetTenantDatabaseStateAsync(string databaseName) => _commonService.TenantSQLiteDatabaseLifecycleService
+        public Task<ApiDataResponse<DatabaseConnectionAnalysis>> GetTenantDatabaseStateAsync(string databaseName) => _lifecycleService
             .GetTenantDatabaseStateAsync(databaseName);
 
     
 
-        public async Task<ApiDataResponse<TenantContext>> SwitchTenantAsync(string databaseName) => await _commonService.TenantSQLiteSelectionService
+        public async Task<ApiDataResponse<TenantContext>> SwitchTenantAsync(string databaseName) => await _selectionService
             .SwitchTenantAsync(databaseName);
 
-        public async Task<(bool isValid, string Message)> ValidateTenantDatabaseAsync(string databaseName) => await _commonService.TenantSQLiteDatabaseLifecycleService
+        public async Task<(bool isValid, string Message)> ValidateTenantDatabaseAsync(string databaseName) => await _lifecycleService
             .ValidateTenantDatabaseAsync(databaseName);
     }
 }

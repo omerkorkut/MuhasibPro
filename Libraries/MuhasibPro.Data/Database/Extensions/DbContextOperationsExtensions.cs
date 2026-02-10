@@ -11,16 +11,6 @@ namespace MuhasibPro.Data.Database.Extensions
         /// <summary>
         /// Database bağlantısını, migration durumunu ve yapısını analiz eder (READ ONLY)
         /// </summary>
-        /// <param name="context">DbContext instance</param>
-        /// <param name="databaseName">Database adı (loglama için)</param>
-        /// <param name="tablesToCheck">Kontrol edilecek tablo listesi</param>
-        /// <param name="logger">Opsiyonel logger</param>
-       
-        /// <returns>Database analiz sonucu</returns>
-        /// <remarks>
-        /// Bu metod sadece okuma yapar, herhangi bir değişiklik yapmaz. Integrity check, bağlantı testi ve migration
-        /// durumunu kontrol eder.
-        /// </remarks>
         public static async Task<DatabaseConnectionAnalysis> GetConnectionFullStateAsync(
             this DbContext context,
             string databaseName,
@@ -46,9 +36,9 @@ namespace MuhasibPro.Data.Database.Extensions
                     logger?.LogWarning("Veritabanı bulunamadı: {Database}", databaseName);
                     return analysis;
                 }
+
                 if (!analysis.DatabaseValid)
                 {
-                    // SQLite'ın dahili bütünlük kontrolü (Hızlıdır)
                     var integrity = await context.Database
                         .SqlQueryRaw<string>("PRAGMA integrity_check")
                         .FirstOrDefaultAsync()
@@ -60,15 +50,16 @@ namespace MuhasibPro.Data.Database.Extensions
                         return analysis;
                     }
                 }
-                // 1. CONNECTION TEST
 
+                // 1. CONNECTION TEST
                 analysis.CanConnect = await context.Database.CanConnectAsync().ConfigureAwait(false);
                 if (!analysis.CanConnect)
                 {
                     logger?.LogDebug("Database'e bağlanılamadı: {Database}", databaseName);
                     return analysis;
                 }
-                // 2. TABLE ANALYSIS (İyileştirilmiş)
+
+                // 2. TABLE ANALYSIS
                 int existingTableCount = 0;
                 bool hasActualData = false;
 
@@ -80,7 +71,6 @@ namespace MuhasibPro.Data.Database.Extensions
                     if (await TableExistsAsync(context, tableName).ConfigureAwait(false))
                     {
                         existingTableCount++;
-                        // Sadece bir tabloda bile veri olması, yedek alınması için yeterlidir.
                         if (!hasActualData && await TableHasRowsSafeAsync(context, tableName).ConfigureAwait(false))
                         {
                             hasActualData = true;
@@ -89,7 +79,6 @@ namespace MuhasibPro.Data.Database.Extensions
                 }
 
                 analysis.TableCount = existingTableCount;
-                // Eğer kontrol edilen hiçbir tablo yoksa VEYA tablolar var ama içi boşsa IsEmpty = true
                 analysis.IsEmptyDatabase = existingTableCount == 0 || !hasActualData;
 
                 // 3. MIGRATION ANALYSIS
@@ -101,9 +90,9 @@ namespace MuhasibPro.Data.Database.Extensions
                 analysis.CurrentVersion = GetVersionFromMigrations(applied);
 
                 logger?.LogDebug(
-                "Database analizi tamamlandı: {Database}, Pending: {Count}",
-                databaseName,
-                analysis.PendingMigrations?.Count ?? 0);
+                    "Database analizi tamamlandı: {Database}, Pending: {Count}",
+                    databaseName,
+                    analysis.PendingMigrations?.Count ?? 0);
             }
             catch (Exception ex)
             {
@@ -119,12 +108,9 @@ namespace MuhasibPro.Data.Database.Extensions
         #region Migration Execution (Write Operation)
 
         /// <summary>
-        /// // WRITE OPERATION - migration uygula var result = await dbContext.ExecuteMigrationsWithBackupCheckAsync(
-        /// databaseName: "SistemDB", tablesToCheck: new[] { "Kullanicilar", "AppDbVersiyonlar" }, backupAction: async
-        /// () => await _backupManager.CreateBackupAsync(ct), logger: _logger, commandTimeoutMinutes: 10,
-       
+        /// Orijinal metod - geriye uyumluluk için
         /// </summary>
-        public static async Task<DatabaseMigrationExecutionResult> ExecuteMigrationsWithBackupCheckAsync(
+        public static async Task<DatabaseMigrationExecutionResult> ExecuteTenantMigrationsWithBackupCheckAsync(
             this DbContext context,
             string databaseName,
             bool isDatabaseExists,
@@ -133,25 +119,44 @@ namespace MuhasibPro.Data.Database.Extensions
             Func<Task<bool>> restoreAction = null,
             Func<Task<bool>> backupAction = null,
             ILogger logger = null,
+            int commandTimeoutMinutes = 5
+            )
+        {
+            // İç analiz yap ve ana metoda yönlendir
+            var analysis = await context.GetConnectionFullStateAsync(
+                databaseName, isDatabaseExists, databaseValid, tablesToCheck, logger)
+                .ConfigureAwait(false);
+
+            return await context.ExecuteMigrationsWithBackupCheckAsync(
+                analysis, restoreAction, backupAction, logger, commandTimeoutMinutes)
+                .ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// ✅ YENİ: Analiz parametreli ana metod (TEMEL METOD)
+        /// </summary>
+        public static async Task<DatabaseMigrationExecutionResult> ExecuteMigrationsWithBackupCheckAsync(
+            this DbContext context,
+            DatabaseConnectionAnalysis analysis,
+            Func<Task<bool>> restoreAction = null,
+            Func<Task<bool>> backupAction = null,
+            ILogger logger = null,
             int commandTimeoutMinutes = 5)
         {
             var result = new DatabaseMigrationExecutionResult
             {
-                DatabaseName = databaseName,
+                DatabaseName = analysis.DatabaseName,
                 OperationTime = DateTime.UtcNow,
-                DatabaseValid = databaseValid,
+                DatabaseValid = analysis.DatabaseValid,
                 IsRolledBack = false,
+                CanConnect = analysis.CanConnect,
+                PendingMigrations = analysis.PendingMigrations,
+                AppliedMigrationsCount = analysis.AppliedMigrationsCount
             };
 
             try
             {
-                // 1. ÖNCE ANALİZ ET
-                var analysis = await context.GetConnectionFullStateAsync(
-                    databaseName,
-                    isDatabaseExists,
-                    databaseValid,
-                    tablesToCheck,
-                    logger).ConfigureAwait(false);
+                // ✅ TEMEL KONTROLLER
                 if (!analysis.IsDatabaseExists)
                 {
                     result.HasError = true;
@@ -159,31 +164,82 @@ namespace MuhasibPro.Data.Database.Extensions
                     logger?.LogWarning(result.Message);
                     return result;
                 }
-                result.CanConnect = analysis.CanConnect;
-                result.DatabaseValid = analysis.DatabaseValid;
-                result.PendingMigrations = analysis.PendingMigrations;
-                result.AppliedMigrationsCount = analysis.AppliedMigrationsCount;
 
                 if (!analysis.CanConnect)
                 {
+                    result.HasError = true;
                     result.Message = analysis.ToUIFullMessage();
                     logger?.LogWarning(result.Message);
                     return result;
                 }
 
-                if (!analysis.IsUpdateRequired)
+                // ✅ 1. BACKUP KONTROLÜ (HER ZAMAN ÖNCE!)
+                bool shouldTakeBackup = analysis.ShouldTakeBackupBeforeMigration;
+
+                if (shouldTakeBackup && backupAction != null)
                 {
-                    result.Message = analysis.ToUIFullMessage();
-                    logger?.LogInformation("{Database}: {Message}", databaseName, result.Message);
-                    return result;
+                    logger?.LogInformation("Backup başlatılıyor: {Database}", analysis.DatabaseName);
+
+                    bool backupSuccess = false;
+                    int retryCount = 0;
+
+                    while (!backupSuccess && retryCount < 2)
+                    {
+                        try
+                        {
+                            backupSuccess = await backupAction();
+                            if (backupSuccess)
+                            {
+                                // Backup alındı bilgisini kaydet
+                                result.BackupTaken = true;
+                                result.Message = "Backup başarıyla alındı. ";
+                                logger?.LogInformation("Backup başarılı: {Database}", analysis.DatabaseName);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            retryCount++;
+                            logger?.LogWarning(ex, "Backup denemesi {Retry} başarısız", retryCount);
+                            await Task.Delay(1000);
+                        }
+                    }
+
+                    if (!backupSuccess)
+                    {
+                        result.HasError = true;
+                        result.Message += "Yedek alınamadığı için işlem durduruldu.";
+                        return result;
+                    }
                 }
-                // 2. DOSYA BOYUT KONTROLÜ 
+
+                // ✅ 2. MIGRATION KONTROLÜ (BACKUP'TAN SONRA!)
+                bool hasPendingMigrations = analysis.PendingMigrations?.Any() == true;
+
+                // Migration gerekmiyorsa bile backup alınmış olabilir
+                if (!hasPendingMigrations)
+                {
+                    // Eğer backup alındıysa mesaj zaten var
+                    if (string.IsNullOrEmpty(result.Message))
+                    {
+                        result.Message = analysis.ToUIFullMessage();
+                    }
+                    else
+                    {
+                        // Backup mesajının üzerine ekle
+                        result.Message += analysis.ToUIFullMessage();
+                    }
+
+                    logger?.LogInformation("{Database}: {Message}", analysis.DatabaseName, result.Message);
+                    return result; // ✅ Migration gerekmiyor ama backup alınmış olabilir
+                }
+
+                // ✅ 3. VERİTABANI BÜTÜNLÜK KONTROLÜ
                 if (!analysis.DatabaseValid && restoreAction != null)
                 {
                     bool restoreSuccess = false;
                     int retryCount = 0;
 
-                    while (!restoreSuccess && retryCount < 2) // En fazla 2 kere dene
+                    while (!restoreSuccess && retryCount < 2)
                     {
                         try
                         {
@@ -193,117 +249,79 @@ namespace MuhasibPro.Data.Database.Extensions
                         catch
                         {
                             retryCount++;
-                            await Task.Delay(1000); // 1 saniye bekle
+                            await Task.Delay(1000);
                         }
                     }
 
                     if (!restoreSuccess)
                     {
-                        result.Message = "Veritabanı meşgul veya kilitli, Geri yüklenemediği için işlem durduruldu.";
-                        return result;
-                    }
-                }
-                // 3. BACKUP KONTROLÜ (İyileştirilmiş)
-                if (analysis.ShouldTakeBackupBeforeMigration && backupAction != null)
-                {
-                    bool backupSuccess = false;
-                    int retryCount = 0;
-
-                    while (!backupSuccess && retryCount < 2) // En fazla 2 kere dene
-                    {
-                        try
-                        {
-                            backupSuccess = await backupAction();
-                        }
-                        catch
-                        {
-                            retryCount++;
-                            await Task.Delay(1000); // 1 saniye bekle
-                        }
-                    }
-
-                    if (!backupSuccess)
-                    {
-                        result.Message = "Veritabanı meşgul veya kilitli, yedek alınamadığı için işlem durduruldu.";
+                        result.HasError = true;
+                        result.Message += "Veritabanı meşgul veya kilitli, Geri yüklenemediği için işlem durduruldu.";
                         return result;
                     }
                 }
 
-                // 4. MIGRATION UYGULA
+                // ✅ 4. MIGRATION UYGULA
                 context.Database.SetCommandTimeout(TimeSpan.FromMinutes(commandTimeoutMinutes));
                 await context.Database.MigrateAsync().ConfigureAwait(false);
 
-                // 5. SON DURUMU KONTROL ET
+                // ✅ 5. SON DURUMU KONTROL ET
+                // Tablo listesi analysis'ten alınabilir veya null geçilebilir
                 var finalAnalysis = await context.GetConnectionFullStateAsync(
-                    databaseName,
-                    isDatabaseExists,
-                    databaseValid,
-                    tablesToCheck,
-                    logger).ConfigureAwait(false);
+                    analysis.DatabaseName,
+                    analysis.IsDatabaseExists,
+                    analysis.DatabaseValid,
+                    Array.Empty<string>(), // Tablo kontrolü gerekmiyor
+                    logger)
+                    .ConfigureAwait(false);
 
+                // Migration sonrası hata kontrolü
                 if (finalAnalysis.DatabaseValid == false && restoreAction != null)
                 {
                     await restoreAction();
+                    result.IsRolledBack = true;
                 }
+
                 result.DatabaseValid = finalAnalysis.DatabaseValid;
                 result.AppliedMigrationsCount = finalAnalysis.AppliedMigrationsCount;
                 result.PendingMigrations = finalAnalysis.PendingMigrations;
-                result.Message = $"Başarıyla migration uygulandı ({analysis.PendingMigrations.Count} migration)";
+
+                // ✅ Modelin GetStatusMessage() metodunu kullan
+                result.Message = result.ToUIFullMessage();
+
+                // Backup alındıysa ek bilgi ver
+                if (result.BackupTaken)
+                {
+                    result.Message += " (Yedek alındı)";
+                }
 
                 logger?.LogInformation(
-                "Migration tamamlandı: {Database} ({Count} migration)",
-                databaseName,
-                analysis.PendingMigrations.Count);
+                    "Migration tamamlandı: {Database} ({Count} migration, Backup: {Backup})",
+                    analysis.DatabaseName,
+                    analysis.PendingMigrations?.Count ?? 0,
+                    result.BackupTaken ? "Evet" : "Hayır");
             }
             catch (Exception ex)
             {
                 result.HasError = true;
                 result.Message = $"Migration başarısız: {ex.Message}";
-                logger?.LogError(ex, "Migration başarısız: {Database}", databaseName);
-            }
+                logger?.LogError(ex, "Migration başarısız: {Database}", analysis.DatabaseName);
 
-            return result;
-        }
-        #endregion
-
-        #region Created Execution (Write Operation)
-
-        /// <summary>
-        /// // WRITE OPERATION - veritabanı oluşturur  var created = await dbContext.ExecuteCreatingAsync( databaseName:
-        /// "SistemDB", logger: _logger, commandTimeoutMinutes: 10);
-        /// </summary>
-        public static async Task<DatabaseCreatingExecutionResult> ExecuteCreatingDatabaseAsync(
-            this DbContext context,
-            string databaseName,
-            ILogger logger = null,
-            int commandTimeoutMinutes = 5)
-        {
-            var result = new DatabaseCreatingExecutionResult
-            {
-                DatabaseName = databaseName,
-                OperationTime = DateTime.UtcNow
-            };
-
-            try
-            {
-                // 3. MIGRATION UYGULA
-                context.Database.SetCommandTimeout(TimeSpan.FromMinutes(commandTimeoutMinutes));
-                await context.Database.MigrateAsync().ConfigureAwait(false);
-                var canConnect = await context.Database.CanConnectAsync().ConfigureAwait(false);
-                if (canConnect)
+                // Hata durumunda restore denenebilir
+                if (restoreAction != null)
                 {
-                    result.IsCreatedSuccess = true;
-                    result.CanConnect = canConnect;
-                    result.Message = $"✅ Veritabanı başarıyla oluşturuldu";
-
-                    logger?.LogInformation("Veritabanı oluşturma işlemi tamamlandı {DatabaseName})", databaseName);
+                    try
+                    {
+                        await restoreAction();
+                        result.IsRolledBack = true;
+                        result.Message += " Hata nedeniyle yedekten geri yüklendi.";
+                    }
+                    catch
+                    {
+                        // Restore da başarısız olursa logla
+                        logger?.LogError("Hata durumunda restore de başarısız oldu.");
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                result.HasError = true;
-                result.Message = $"❌ Veritabanı oluşturma işlemi başarısız: {ex.Message}";
-                logger?.LogError(ex, "Veritabanı oluşturma işlemi başarısız: {Database}", databaseName);
             }
 
             return result;
@@ -324,7 +342,6 @@ namespace MuhasibPro.Data.Database.Extensions
             }
             catch (Exception)
             {
-                // Loglama yapma sorumluluğu çağırana bırakılıyor; burada false dön
                 return false;
             }
         }
@@ -361,11 +378,9 @@ namespace MuhasibPro.Data.Database.Extensions
 
             var lastMigration = migrationList.Last();
 
-            // 20240115143000_Initial gibi bir format varsa
             if (lastMigration.Length >= 14 && long.TryParse(lastMigration.AsSpan(0, 14), out _))
             {
                 var ts = lastMigration.AsSpan(0, 14);
-                // Format: 2024.01.15.1430 (Yıl.Ay.Gün.SaatDakika)
                 return $"{ts.Slice(0, 4)}.{ts.Slice(4, 2)}.{ts.Slice(6, 2)}.{ts.Slice(8, 4)}";
             }
 
@@ -374,5 +389,3 @@ namespace MuhasibPro.Data.Database.Extensions
         #endregion
     }
 }
-
-

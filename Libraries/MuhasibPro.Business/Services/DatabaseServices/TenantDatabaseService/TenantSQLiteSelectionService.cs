@@ -1,6 +1,6 @@
-﻿using MuhasibPro.Business.Contracts.CommonServices;
-using MuhasibPro.Business.Contracts.DatabaseServices.TenantDatabaseServices;
+﻿using MuhasibPro.Business.Contracts.DatabaseServices.TenantDatabaseServices;
 using MuhasibPro.Business.Contracts.SistemServices.LogServices;
+using MuhasibPro.Business.Contracts.UIServices.CommonServices;
 using MuhasibPro.Business.Services.SistemServices.LogServices;
 using MuhasibPro.Data.Contracts.Database.TenantDatabase;
 using MuhasibPro.Data.Database.Extensions;
@@ -54,7 +54,8 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
         public TenantSQLiteSelectionService(
             ITenantSQLiteSelectionManager selectionManager,
             IMessageService messageService,
-            ILogService logService)
+            ILogService logService,
+            ITenantSQLiteDatabaseManager databaseManager)
         {
             _selectionManager = selectionManager;
             _messageService = messageService;
@@ -62,6 +63,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
 
             // Manager'daki değişiklikleri MessageService ile yayınla
             _selectionManager.TenantChanged += OnManagerTenantChanged;
+            _databaseManager = databaseManager;
         }
 
         private void OnManagerTenantChanged(TenantContext tenant)

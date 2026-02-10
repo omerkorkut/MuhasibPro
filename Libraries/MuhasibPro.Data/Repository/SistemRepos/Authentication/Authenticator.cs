@@ -29,12 +29,17 @@ namespace MuhasibPro.Data.Repository.SistemRepos.Authentication
 
         public event Action StateChanged;
 
-        public async Task<Hesap> Login(string username, string password)
+        public async Task<Kullanici> Login(string username, string password)
         {
             var account = await _authenticationRepository.Login(username, password).ConfigureAwait(false);
             if (account != null)
             {
-                CurrentAccount = account;
+                var hesap = new Hesap();
+                hesap.Kullanici = account;
+                hesap.KullaniciId = account.Id;
+                hesap.SonGirisTarihi=DateTime.UtcNow;
+                if(hesap != null)
+                    CurrentAccount = hesap;
             }
             return account;
         }

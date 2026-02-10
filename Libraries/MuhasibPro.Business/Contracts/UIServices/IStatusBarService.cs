@@ -8,13 +8,13 @@ namespace MuhasibPro.Business.Contracts.UIServices
     /// </summary>
     public interface IStatusBarService : INotifyPropertyChanged
     {
-        public IStatusMessageService StatusMessageService { get; set; }
-
         #region Properties
         /// <summary>
         /// Kullanıcı adı (StatusBar'da gösterilir)
         /// </summary>
         string UserName { get; set; }
+        string KullaniciAdiSoyadi { get; set; }
+        int MaliDonem {  get; set; }
 
         /// <summary>
         /// Veritabanı bağlantı mesajı
@@ -24,8 +24,8 @@ namespace MuhasibPro.Business.Contracts.UIServices
         /// <summary>
         /// Veritabanı bağlantı durumu (true: bağlı, false: bağlı değil)
         /// </summary>
-        bool IsDatabaseConnection { get; set; }
-
+        bool IsSistemDatabaseConnection { get; set; }
+        bool IsTenantDatabaseConnection { get; set; }
 
 
         #endregion
@@ -44,7 +44,8 @@ namespace MuhasibPro.Business.Contracts.UIServices
         /// <summary>
         /// Veritabanı durumunu ayarla
         /// </summary>
-        void SetDatabaseStatus(bool isConnected, string message = null);
+        void SetSistemDatabaseStatus(bool isConnected, string message = null);
+        void SetTenantDatabaseStatus(bool isConnected, string message = null);
         #endregion
     }
 }

@@ -11,19 +11,38 @@ namespace MuhasibPro.Data.Database.SistemDatabase
     {
         private readonly ILogger<SistemDatabaseManager> _logger;
         private readonly ISistemMigrationManager _migrationManager;
+        private readonly IApplicationPaths _appPaths;
+
         private const string _databaseName = DatabaseConstants.SISTEM_DB_NAME;
         public SistemDatabaseManager(
             ILogger<SistemDatabaseManager> logger,
             ISistemMigrationManager migrationManager,
             ISistemBackupManager backupManager,
-            IApplicationPaths applicationPaths
+            IApplicationPaths appPaths
        )
         {
             _logger = logger;
             _migrationManager = migrationManager;
+            _appPaths = appPaths;           
+        }
+        
+        public (bool isValid, string message) QuickSistemDatabaseTest()
+        {            
+            var dbExist = _appPaths.SistemDatabaseFileExists();
+            var dbValid = _appPaths.IsSistemDatabaseSizeValid();
+            if (!dbExist)
+            {
+                return (false, "Sistem Veritabanı dosyası bulunamadı");
+            }
+            if (!dbValid) 
+            {
+                return (false, "Sistem Veritabanı dosyası geçersiz");
+            }
+            return (dbExist && dbValid, "Sistem Veritabanı dosyası bulundu ve geçerli"); ;
         }
         public async Task<(bool initializeState, string message)> InitializeSistemDatabaseAsync()
         {
+           
             try
             {
                 var initializeDatabase = await _migrationManager.InitializeSistemDatabaseAsync().ConfigureAwait(false);
@@ -60,7 +79,8 @@ namespace MuhasibPro.Data.Database.SistemDatabase
         }
 
         public async Task<(bool isValid, string Message)> ValidateSistemDatabaseAsync()
-        {
+        {          
+
             var result = await GetSistemDatabaseStateAsync();
 
             // Eğer result null gelirse sistemin çökmemesi için (Opsiyonel)

@@ -23,7 +23,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService.Co
             IApplicationPaths applicationPaths,
             ITenantSQLiteDatabaseOperationService operationService,
             ITenantSQLiteSelectionService selectionService,
-            ITenantSQLieBackupManager tenantSQLieBackupManager)
+            ITenantSQLiteBackupManager tenantSQLieBackupManager)
         {
             _lifecycleService = lifecycleService;
             _backupService = backupService;
@@ -97,24 +97,24 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService.Co
                 DeletedBackupFiles = new List<string>(),
             };
             if(string.IsNullOrWhiteSpace(request.DatabaseName))
-                return ApiDataExtensions.ErrorResponse(result, "DatabaseName boş olamaz");
+                return ApiDataExtensions.ErrorResponse(result, "Veritabanı adı boş olamaz");
             try
             {
                 if(request.DeleteAllTenantBackup)
                 {
                     var allDeletingBackups = await _backupService.CleanAllBackupsAsync(request.DatabaseName);
-                    if(allDeletingBackups.Success && allDeletingBackups.Data.BackupDeleteCompleted)
+                    if(!allDeletingBackups.Success && !allDeletingBackups.Data.BackupDeleteCompleted)
                     {
                         result.DatabaseDeleted = false;
                         result.DeletedBackupFiles = allDeletingBackups.Data.DeletedBackupFiles;
-                        result.DeletedBackupCount = allDeletingBackups.Data.DeletedBackupCount;
-                        result.BackupDeleteCompleted = allDeletingBackups.Data.IsSuccess;
-                        return ApiDataExtensions.SuccessResponse(result, $"Tüm veritabanı yedekleri başarıyla silindi");
+                        result.DeletedBackupCount = allDeletingBackups.Data.DeletedBackupCount;                        
+                        result.BackupDeleteCompleted = allDeletingBackups.Data.BackupDeleteCompleted;
+                        return ApiDataExtensions.ErrorResponse(result, $"Veritabanı yedekleri silinemedi");
                     }
                 } else
                 {
                     result.BackupDeleteCompleted = false;
-                    result.ErrorMessage = "Veritabanına ait yedekler silinemedi, Elle müdahale ediniz,\n Diğer işlemler devam ediyor";
+                    result.SuccessMessage = "Veritabanına ait yedeklerin silinmesi kullanıcı tarafından istenmedi \n Diğer işlemler devam ediyor";
                 }
 
 
@@ -155,7 +155,9 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService.Co
                 DatabaseName = request.DatabaseName,
                 DatabaseDeleted = false,
                 IsCurrentTenantDeletingBeforeBackup = false,
+                
             };
+            var safetyBackupFilePath = string.Empty;
             try
             {
                 bool isCurrentTenantDeleting = false;
@@ -185,6 +187,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService.Co
 
                                 await SafeFileCopyAsync(sourceDbPath, backupFilePath);
                                 result.BackupFilePath = backupFilePath;
+                                safetyBackupFilePath = backupFilePath;
                             }
                             if (request.IsCurrentTenantDeletingBeforeBackup || isCurrentTenantDeleting)
                             {
@@ -200,7 +203,8 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService.Co
                             if (!dbDeleteResponse.Success || dbDeleteResponse.Data == null)
                             {
                                 throw new InvalidOperationException($"Veritabanı silinemedi: {dbDeleteResponse.Message}");
-                            }
+                            }                            
+                            result = dbDeleteResponse.Data;
                             return request.DatabaseName;
                         },
                         compensate: async (databaseName) =>
@@ -229,8 +233,8 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService.Co
                             stepName: "CleanBackup",
                             action: async () =>
                             {
-                                await _backupService.CleanupBackupFileAsync(result.BackupFilePath);
-                                return result.BackupFilePath;
+                                await _backupService.CleanupBackupFileAsync(safetyBackupFilePath);
+                                return safetyBackupFilePath;
                             },
                             compensate: null);
                     }

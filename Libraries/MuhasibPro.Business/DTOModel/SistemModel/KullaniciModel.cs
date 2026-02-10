@@ -1,4 +1,6 @@
-﻿namespace MuhasibPro.Business.DTOModel.SistemModel;
+﻿using MuhasibPro.Domain.Entities.SistemEntity;
+
+namespace MuhasibPro.Business.DTOModel.SistemModel;
 
 public class KullaniciModel : ObservableObject
 {
@@ -52,8 +54,11 @@ public class KullaniciModel : ObservableObject
             GuncellemeTarihi = source.GuncellemeTarihi;
             KaydedenId = source.KaydedenId;
             GuncelleyenId = source.GuncelleyenId;
-
-
+        }
+        if(source.Rol != null)
+        {
+            Rol = source.Rol;          
+            Rol.Merge(source.Rol);
         }
     }
 
