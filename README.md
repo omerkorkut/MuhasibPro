@@ -1,5 +1,7 @@
 Winui3 tabanlı
-VanArsdel Inventory Sample Winui3 sistemine tam uyumlu hale getirilmiştir. 
+UWP "VanArsdel Inventory Sample" uygulaması Winui3 sistemine uyumlu hale getirilmiştir. 
 VanArsdel Inventory alt yapısında kullanılan ServiceLocator yapısı Winui3'e entegre edilmiştir. 
-Multi-Tenant (SQLite) kullanırak açılışta Tenant oluşturma,silme ve seçme
-.....
+
+Multi-Database yapısı ile Sistem ve Tenant veritabanları oluşturulmakta,
+Multi-Tenant (SQLite) kullanırak açılışta Tenant oluşturma,silme ve seçme yapılabilmekte,
+ve geliştirilmekte
