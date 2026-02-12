@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace MuhasibPro.ViewModels.Insrastructure.Common;
+namespace MuhasibPro.ViewModels.Infrastructure.Common;
 
 public interface INotifyExpressionChanged : INotifyPropertyChanged
 {

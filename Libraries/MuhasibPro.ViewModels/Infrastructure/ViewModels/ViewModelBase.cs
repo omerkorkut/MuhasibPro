@@ -4,7 +4,7 @@ using MuhasibPro.Business.Contracts.UIServices.CommonServices;
 using MuhasibPro.Business.DTOModel;
 using MuhasibPro.Domain.Enum;
 
-namespace MuhasibPro.ViewModels.Insrastructure.ViewModels
+namespace MuhasibPro.ViewModels.Infrastructure.ViewModels
 {
     public class ViewModelBase : ObservableObject
     {

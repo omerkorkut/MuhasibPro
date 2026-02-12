@@ -1,7 +1,7 @@
 ﻿using MuhasibPro.Business.Contracts.SistemServices.AppServices;
 using MuhasibPro.Business.Contracts.UIServices.CommonServices;
 using MuhasibPro.Business.DTOModel.SistemModel;
-using MuhasibPro.ViewModels.Insrastructure.ViewModels;
+using MuhasibPro.ViewModels.Infrastructure.ViewModels;
 using MuhasibPro.ViewModels.ViewModels.Sistem.MaliDonemler;
 
 namespace MuhasibPro.ViewModels.ViewModels.Sistem.Firmalar;

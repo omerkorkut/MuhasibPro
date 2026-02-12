@@ -1,7 +1,6 @@
 ﻿using MuhasibPro.Extensions;
 using MuhasibPro.Tools.DependencyExpressions;
 using MuhasibPro.Tools.ElementSet;
-using MuhasibPro.ViewModels.Insrastructure.Common;
 using System.ComponentModel;
 using System.Windows.Input;
 
@@ -10,7 +9,7 @@ using System.Windows.Input;
 
 namespace MuhasibPro.Controls
 {
-    public sealed partial class Details : UserControl, INotifyExpressionChanged
+    public sealed partial class Details : UserControl, ViewModels.Infrastructure.Common.INotifyExpressionChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 

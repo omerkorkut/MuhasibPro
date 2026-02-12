@@ -1,7 +1,6 @@
 ﻿using Microsoft.UI.Xaml.Data;
 using MuhasibPro.Extensions;
 using MuhasibPro.Tools.DependencyExpressions;
-using MuhasibPro.ViewModels.Insrastructure.Common;
 using System.Collections;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -12,7 +11,7 @@ using System.Windows.Input;
 
 namespace MuhasibPro.Controls
 {
-    public sealed partial class DataGrid : UserControl, INotifyExpressionChanged
+    public sealed partial class DataGrid : UserControl, ViewModels.Infrastructure.Common.INotifyExpressionChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 

@@ -127,7 +127,7 @@ namespace MuhasibPro.Helpers.WindowHelpers
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Window closing error: {ex.Message}");
-                MainWindow.AppWindow.Closing -= OnMainWindowClosing;
+                //MainWindow.AppWindow.Closing -= OnMainWindowClosing;
                 Application.Current.Exit();
             }
             finally

@@ -1,5 +1,5 @@
 ﻿using MuhasibPro.Tools.DependencyExpressions;
-using MuhasibPro.ViewModels.Insrastructure.Common;
+using MuhasibPro.ViewModels.Infrastructure.Common;
 using WinUI.TableView;
 
 // To learn more about WinUI, the WinUI project structure,

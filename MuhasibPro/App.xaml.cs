@@ -25,23 +25,29 @@ namespace MuhasibPro
     public partial class App : Application
     {
         private readonly IHost _host;
-        
+
         public static DispatcherQueue _dispatcherQueue;
+
         private static Window MainWindow => new MainWindow();
-        public static IThemeSelectorService ThemeSelectorService => ServiceLocator.Current.GetService<IThemeSelectorService>();
+
+        public static IThemeSelectorService ThemeSelectorService => ServiceLocator.Current
+            .GetService<IThemeSelectorService>();
+
         public static UIElement? AppTitleBar { get; set; }
+
         public App()
         {
             this.InitializeComponent();
             CultureInitialize();
-           
             _host = CreateHostBuilder().Build();
             ServiceLocatorStart(_host);
+
 
             _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
             this.UnhandledException += OnUnhandledException;
         }
+
         private void CultureInitialize()
         {
             var cultures = Thread.CurrentThread.CurrentCulture;
@@ -49,25 +55,23 @@ namespace MuhasibPro
             CultureInfo.DefaultThreadCurrentUICulture = cultures;
             ApplicationLanguages.PrimaryLanguageOverride = cultures.IetfLanguageTag;
         }
-        public static void ServiceLocatorStart(IHost host)
-        {
-            ServiceLocator.Configure(host.Services);
-        }
+
+        public static void ServiceLocatorStart(IHost host) { ServiceLocator.Configure(host.Services); }
+
         public static void  VelopackInitialize()
         {
-            
             VelopackApp.Build()
-                .OnFirstRun(v =>
-                {
-
-                })
-                .OnRestarted (
-                v => 
-                {
-                } )
+                .OnFirstRun(
+                    v =>
+                    {
+                    })
+                .OnRestarted(
+                    v =>
+                    {
+                    })
                 .Run();
-            
         }
+
         public static IHostBuilder CreateHostBuilder(string[] args = null)
         {
             return Host.CreateDefaultBuilder(args)
@@ -75,8 +79,8 @@ namespace MuhasibPro
                 .AddConfiguration()
                 .AddDatabaseManagement()
                 .AddRepositories()
-                .AddCommonServices()
                 .AddBusinessServices()
+                .AddCommonServices()
                 .AddAppViewModel()
                 //.AddAppView();
                 ;
@@ -86,36 +90,34 @@ namespace MuhasibPro
         {
             try
             {
-                WindowHelper.SetMainWindow(MainWindow);               
+                WindowHelper.SetMainWindow(MainWindow);
                 _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
                 await ActiveteAsync(args);
-              
-            }
-            catch (Exception ex)
+            } catch(Exception ex)
             {
                 //await ActiveteAsync(args);
                 await ShowNotificationAsync(ex.Message);
             }
         }
+
         private async Task ActiveteAsync(LaunchActivatedEventArgs args)
-        {            
+        {
             var activationService = _host.Services.GetRequiredService<IActivationService>();
-            if (activationService != null) 
+            if(activationService != null)
             {
                 await activationService.ActivateAsync(args);
-            }
-            else
+            } else
             {
                 WindowHelper.MainWindow?.Activate();
             }
-
         }
+
         public static async Task ShowNotificationAsync(string message, string title = "Bilgi")
         {
             try
             {
                 // UI thread'de çalıştır
-                if (_dispatcherQueue != null)
+                if(_dispatcherQueue != null)
                 {
                     var taskCompletionSource = new TaskCompletionSource<bool>();
                     _dispatcherQueue.TryEnqueue(
@@ -123,7 +125,7 @@ namespace MuhasibPro
                         {
                             try
                             {
-                                if (MainWindow?.Content?.XamlRoot != null)
+                                if(MainWindow?.Content?.XamlRoot != null)
                                 {
                                     var dialog = new ContentDialog
                                     {
@@ -135,8 +137,7 @@ namespace MuhasibPro
                                     await dialog.ShowAsync();
                                 }
                                 taskCompletionSource.SetResult(true);
-                            }
-                            catch (Exception ex)
+                            } catch(Exception ex)
                             {
                                 Debug.WriteLine($"Notification failed: {ex.Message}");
                                 taskCompletionSource.SetResult(false);
@@ -144,13 +145,14 @@ namespace MuhasibPro
                         });
                     await taskCompletionSource.Task;
                 }
-            }
-            catch (Exception ex)
+            } catch(Exception ex)
             {
                 Debug.WriteLine($"Notification failed: {ex.Message}");
             }
         }
+
         public ILogService LogService => _host.Services.GetRequiredService<ILogService>();
+
         private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
         {
             // KRİTİK: Exception'ı handled olarak işaretle - uygulama çökmeyecek
@@ -158,7 +160,7 @@ namespace MuhasibPro
             Debug.WriteLine($"Unhandled exception (handled): {e.Exception}");
             LogService.SistemLogService.WriteAsync(LogType.Hata, this.ToString(), e.Message, e.Exception);
             // UI thread'de hata göster
-            if (_dispatcherQueue != null)
+            if(_dispatcherQueue != null)
             {
                 _dispatcherQueue.TryEnqueue(
                     async () =>
@@ -169,10 +171,6 @@ namespace MuhasibPro
                     });
             }
         }
-        
-
     }
-
-
 }
 

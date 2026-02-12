@@ -5,36 +5,18 @@ namespace MuhasibPro.Data.Contracts.Database.TenantDatabase
     /// <summary>
     /// Manages SQLite tenant database selection and switching
     /// </summary>
-    public interface ITenantSQLiteSelectionManager : IDisposable
+    public interface ITenantSQLiteSelectionManager
     {
-        /// <summary>
-        /// Gets a value indicating whether a tenant is currently loaded
-        /// </summary>
-        bool IsTenantLoaded { get; }
-
-        /// <summary>
-        /// Gets the current tenant context
-        /// </summary>
+        TenantContext SwitchToTenantAsync(TenantContext tenantContext);
+        // Current State
         TenantContext GetCurrentTenant();
-
-        /// <summary>
-        /// Occurs when the current tenant changes
-        /// </summary>
+        Task<string> GetCurrentTenantConnectionStringAsync();
+        bool IsTenantLoaded { get; }
+        // Events (optional - for UI notifications)
         event Action<TenantContext> TenantChanged;
+        void ClearCurrentTenant();
 
-        /// <summary>
-        /// Switches to the specified tenant database
-        /// </summary>
-        /// <param name="databaseName">The name of the database to switch to</param>
-       
-        /// <returns>The new tenant context</returns>
-        /// <exception cref="ArgumentException">Thrown when databaseName is null or empty</exception>
-        /// <exception cref="InvalidOperationException">Thrown when connection to database fails</exception>
-        Task<TenantContext> SwitchToTenantAsync(string databaseName);
 
-        /// <summary>
-        /// Clears the current tenant (sets to empty)
-        /// </summary>
-        Task ClearCurrentTenantAsync();
+
     }
 }

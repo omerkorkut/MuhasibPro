@@ -14,19 +14,11 @@
 
 using System;
 
-namespace MuhasibPro.ViewModels.Insrastructure.Common
+namespace MuhasibPro.ViewModels.Infrastructure.Common
 {
-    public enum ListToolbarMode
+    public class IndexRange
     {
-        Default,
-        Cancel,
-        CancelDelete
-    }
-
-    public enum DetailToolbarMode
-    {
-        Default,
-        BackEditdDelete,
-        CancelSave
+        public int Index { get; set; }
+        public int Length { get; set; }
     }
 }

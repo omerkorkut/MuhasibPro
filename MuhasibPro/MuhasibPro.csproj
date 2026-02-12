@@ -131,9 +131,6 @@
     <ProjectReference Include="..\Libraries\MuhasibPro.ViewModels\MuhasibPro.ViewModels.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Databases\Backups\" />
-    <Folder Include="Databases\Backups\TenantBackups\" />
-    <Folder Include="Databases\Tenants\" />
     <Folder Include="Services\UtilityService\" />
     <Folder Include="Views\SistemViews\" />
   </ItemGroup>

@@ -15,7 +15,7 @@
 using System;
 using System.Windows.Input;
 
-namespace MuhasibPro.ViewModels.Insrastructure.Common
+namespace MuhasibPro.ViewModels.Infrastructure.Common
 {
     public class RelayCommand : ICommand
     {

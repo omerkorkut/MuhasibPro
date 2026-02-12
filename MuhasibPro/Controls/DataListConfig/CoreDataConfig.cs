@@ -1,7 +1,7 @@
 ﻿using Microsoft.UI.Xaml.Data;
 using MuhasibPro.Extensions;
 using MuhasibPro.Tools.DependencyExpressions;
-using MuhasibPro.ViewModels.Insrastructure.Common;
+using MuhasibPro.ViewModels.Infrastructure.Common;
 using System.Collections;
 using System.Collections.Specialized;
 

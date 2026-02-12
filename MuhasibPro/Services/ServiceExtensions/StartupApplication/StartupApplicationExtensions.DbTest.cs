@@ -6,7 +6,7 @@ namespace MuhasibPro.Services.ServiceExtensions.StartupApplication
     public static partial class StartupApplicationExtensions
     {
         public static async Task ExecuteDatabaseValidationAsync(
-            this IStartupApplicationService startupService,
+            this IStartupApplicationService startupService,           
             CancellationToken cancellationToken = default)
         {
             await startupService.ExecuteStepWithProgressAsync(

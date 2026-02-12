@@ -2,8 +2,8 @@
 using MuhasibPro.Business.Contracts.UIServices.CommonServices;
 using MuhasibPro.Business.DTOModel;
 using MuhasibPro.Business.ResultModels.TenantResultModels;
-using MuhasibPro.ViewModels.Insrastructure.Common;
-using MuhasibPro.ViewModels.Insrastructure.ViewModels;
+using MuhasibPro.ViewModels.Infrastructure.Common;
+using MuhasibPro.ViewModels.Infrastructure.ViewModels;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 

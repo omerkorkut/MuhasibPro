@@ -6,7 +6,7 @@ namespace MuhasibPro.Services.UIService
 {
     public class StartupApplicationService : IStartupApplicationService
     {
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;        
         private readonly object _syncLock = new();
 
         private StartupState _currentState = StartupState.NotStarted;
@@ -63,6 +63,7 @@ namespace MuhasibPro.Services.UIService
         public StartupApplicationService(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            
             InitializeStepProgressMap();
         }
 

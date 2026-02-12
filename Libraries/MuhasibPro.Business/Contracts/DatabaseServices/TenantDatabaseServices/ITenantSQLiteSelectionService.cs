@@ -9,7 +9,7 @@ namespace MuhasibPro.Business.Contracts.DatabaseServices.TenantDatabaseServices
         Task<ApiDataResponse<bool>> DisconnectCurrentTenantAsync();
         TenantContext CurrentTenant { get; }
         bool IsTenantLoaded { get; }
-        Task ClearCurrentTenantAsync();
+        void ClearCurrentTenantAsync();
         
     }
 }

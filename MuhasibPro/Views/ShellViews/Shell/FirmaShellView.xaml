@@ -16,7 +16,7 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-
+        
         <!--  Header  -->
         <Border
             Grid.Row="0"

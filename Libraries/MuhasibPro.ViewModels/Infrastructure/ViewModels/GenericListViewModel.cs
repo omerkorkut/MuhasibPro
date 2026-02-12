@@ -1,11 +1,11 @@
 ﻿using MuhasibPro.Business.Contracts.UIServices.CommonServices;
 using MuhasibPro.Business.DTOModel;
 using MuhasibPro.Domain.Enum;
-using MuhasibPro.ViewModels.Insrastructure.Common;
-using MuhasibPro.ViewModels.Insrastructure.Extensions;
+using MuhasibPro.ViewModels.Infrastructure.Common;
+using MuhasibPro.ViewModels.Infrastructure.Extensions;
 using System.Windows.Input;
 
-namespace MuhasibPro.ViewModels.Insrastructure.ViewModels;
+namespace MuhasibPro.ViewModels.Infrastructure.ViewModels;
 
 public abstract partial class GenericListViewModel<TModel> : ViewModelBase where TModel : ObservableObject
 {

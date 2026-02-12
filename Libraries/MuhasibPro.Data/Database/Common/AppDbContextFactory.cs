@@ -33,7 +33,7 @@ namespace MuhasibPro.Data.Database.Common
         public AppDbContext CreateDbContext(string databaseName)
         {
             if (string.IsNullOrWhiteSpace(databaseName))
-                throw new ArgumentException("Database adı boş olamaz", nameof(databaseName));
+                throw new ArgumentException("Veritabanı adı boş olamaz", nameof(databaseName));
 
             var options = CreateDbContextOptions(databaseName);
             return new AppDbContext(options);

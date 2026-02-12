@@ -70,7 +70,7 @@ namespace MuhasibPro.Services.ServiceExtensions.StartupApplication
         /// </summary>
         public static async Task<bool> ExecuteStartupSequenceAsync(
             this IStartupApplicationService startupService,
-            IServiceProvider serviceProvider,
+            IServiceProvider serviceProvider,            
             CancellationToken cancellationToken = default)
         {
             try
@@ -84,7 +84,8 @@ namespace MuhasibPro.Services.ServiceExtensions.StartupApplication
                          Startup.Instance.ConfigureNavigation();
                         return Task.CompletedTask;
                     },
-                    cancellationToken);                     
+                    cancellationToken);
+                
                 await ExecuteDatabaseValidationAsync(startupService,cancellationToken);
                 await startupService.ExecuteStepAsync(
                     StartupStep.ApplicationUpdateCheck,

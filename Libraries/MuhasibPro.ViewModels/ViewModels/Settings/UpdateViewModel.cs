@@ -1,8 +1,8 @@
 ﻿using MuhasibPro.Business.Contracts.UIServices.CommonServices;
 using MuhasibPro.Domain.Enum;
 using MuhasibPro.Domain.Models;
-using MuhasibPro.ViewModels.Insrastructure.Common;
-using MuhasibPro.ViewModels.Insrastructure.ViewModels;
+using MuhasibPro.ViewModels.Infrastructure.Common;
+using MuhasibPro.ViewModels.Infrastructure.ViewModels;
 using System.Windows.Input;
 
 

@@ -1,10 +1,9 @@
 ﻿using MuhasibPro.Extensions;
 using MuhasibPro.Tools.DependencyExpressions;
-using MuhasibPro.ViewModels.Insrastructure.Common;
 
 namespace MuhasibPro.Controls
 {
-    public class SelectionConfig : DependencyObject, INotifyExpressionChanged
+    public class SelectionConfig : DependencyObject, ViewModels.Infrastructure.Common.INotifyExpressionChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
         private readonly DependencyExpressions _dependencyExpressions = new();

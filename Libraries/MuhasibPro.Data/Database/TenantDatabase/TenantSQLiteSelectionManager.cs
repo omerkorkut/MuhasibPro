@@ -1,183 +1,81 @@
 ﻿using Microsoft.Extensions.Logging;
+using MuhasibPro.Data.Contracts.Database.Common;
 using MuhasibPro.Data.Contracts.Database.TenantDatabase;
 using MuhasibPro.Data.DataContext;
-using System.Collections.Concurrent;
+using MuhasibPro.Domain.Enum.DatabaseEnum;
 
 namespace MuhasibPro.Data.Database.TenantDatabase
 {
-    public sealed class TenantSQLiteSelectionManager : ITenantSQLiteSelectionManager, IAsyncDisposable
+    public class TenantSQLiteSelectionManager : ITenantSQLiteSelectionManager
     {
+
         private readonly ITenantSQLiteConnectionStringFactory _connectionStringFactory;
         private readonly ILogger<TenantSQLiteSelectionManager> _logger;
+        private readonly object _tenantLock = new object();
+        private TenantContext _currentTenant;
 
-        private readonly SemaphoreSlim _tenantSemaphore = new(1, 1);
-        private readonly ConcurrentDictionary<string, ConnectionCacheEntry> _connectionCache = new();
-
-        private TenantContext _currentTenant = TenantContext.Empty;
-
-        private event Action<TenantContext> TenantChangedInternal;
-        private readonly object _eventLock = new();
-        private bool _disposed;
-
+        // ⭐ Constructor düzeltildi: Kullanılmayan dependency çıkarıldı
         public TenantSQLiteSelectionManager(
+            IAppDbContextFactory dbContextFactory,
             ITenantSQLiteConnectionStringFactory connectionStringFactory,
-            ILogger<TenantSQLiteSelectionManager> logger)
+            ILogger<TenantSQLiteSelectionManager> logger) // ⭐ connectionManager ÇIKARILDI
         {
+            _currentTenant = TenantContext.Empty;
             _connectionStringFactory = connectionStringFactory;
             _logger = logger;
         }
 
-        #region Public Interface
-        public bool IsTenantLoaded => _currentTenant.IsLoaded;
+        public bool IsTenantLoaded => _currentTenant?.IsLoaded ?? false;
 
-        public event Action<TenantContext> TenantChanged
-        {
-            add
-            {
-                if(value == null)
-                    return;
-                lock(_eventLock)
-                    TenantChangedInternal += value;
-            }
-            remove
-            {
-                if(value == null)
-                    return;
-                lock(_eventLock)
-                    TenantChangedInternal -= value;
-            }
-        }
+        public event Action<TenantContext> TenantChanged;
 
         public TenantContext GetCurrentTenant() => _currentTenant;
 
-        public async Task<TenantContext> SwitchToTenantAsync(
-            string databaseName)
+        public TenantContext SwitchToTenantAsync(TenantContext tenantContext)
         {
-            if(string.IsNullOrWhiteSpace(databaseName))
-                throw new ArgumentException("Database name required", nameof(databaseName));
-
-            ThrowIfDisposed();
-
-            await _tenantSemaphore.WaitAsync();
-            try
+            lock (_tenantLock)
             {
-                return await SwitchToTenantCoreAsync(databaseName);
-            } finally
-            {
-                _tenantSemaphore.Release();
-            }
-        }
-
-        public async Task ClearCurrentTenantAsync()
-        {
-            ThrowIfDisposed();
-
-            await _tenantSemaphore.WaitAsync();
-            try
-            {
-                var oldTenant = _currentTenant;
-                _currentTenant = TenantContext.Empty;
-
-                SafeInvokeTenantChanged(TenantContext.Empty);
-                _logger.LogInformation("Tenant cleared: {DatabaseName}", oldTenant.DatabaseName);
-            } finally
-            {
-                _tenantSemaphore.Release();
-            }
-        }
-
-        
-        #endregion
-
-        #region Core Logic
-        private async Task<TenantContext> SwitchToTenantCoreAsync(
-            string databaseName)
-        {
-            // 1. Check if already current
-            if(_currentTenant.DatabaseName == databaseName && _currentTenant.IsLoaded)
-            {
-                var updated = _currentTenant.WithRefreshedConnection();
-                _currentTenant = updated;
-                return updated;
-            }
-
-            // 2. Test connection
-            var connectionResult = await _connectionStringFactory.ValidateConnectionStringAsync(
-                databaseName);
-
-            if(!connectionResult.canConnect)
-            {
-                var errorTenant = _currentTenant.WithMessage($"Bağlantı hatası: {connectionResult.message}");
-                _currentTenant = errorTenant;
-                return errorTenant;
-            }
-
-            // 3. Create new tenant
-            var newTenant = TenantContext.Create(
-                databaseName: databaseName,
-                connectionString: connectionResult.connectionString,
-                canConnect: true,
-                message: connectionResult.message);
-
-            // 4. Switch
-            var oldTenant = _currentTenant;
-            _currentTenant = newTenant;
-
-            // 5. Notify
-            SafeInvokeTenantChanged(newTenant);
-            _logger.LogInformation("Tenant switched: {Old} -> {New}", oldTenant.DatabaseName, newTenant.DatabaseName);
-
-            return newTenant;
-        }
-
-        private void SafeInvokeTenantChanged(TenantContext tenant)
-        {
-            Action<TenantContext> handlers;
-            lock(_eventLock)
-            {
-                handlers = TenantChangedInternal;
-            }
-
-            if(handlers == null)
-                return;
-
-            foreach(Action<TenantContext> handler in handlers.GetInvocationList())
-            {
-                try
+                if (_currentTenant.DatabaseName == tenantContext.DatabaseName && _currentTenant.IsLoaded)
                 {
-                    handler(tenant);
-                } catch(Exception ex)
-                {
-                    _logger.LogError(ex, "TenantChanged handler error");
+                    _logger.LogDebug("Zaten aktif tenant: {DatabaseName}", tenantContext.DatabaseName);
+                    return _currentTenant;
                 }
             }
+            var newTenant = tenantContext;
+            
+
+            lock (_tenantLock)
+            {
+                _currentTenant = newTenant;
+            }
+            TenantChanged?.Invoke(newTenant);
+            _logger.LogInformation("Tenant değiştirildi: {DatabaseName}", tenantContext.DatabaseName);
+            return _currentTenant;
         }
-        #endregion
-
-
-        #region Disposal
-        private void ThrowIfDisposed()
+        // ⭐ Metod ismi ve imzası düzeltildi
+        public Task<string> GetCurrentTenantConnectionStringAsync()
         {
-            if(_disposed)
-                throw new ObjectDisposedException(nameof(TenantSQLiteSelectionManager));
+            try
+            {
+                var current = GetCurrentTenant();
+                return Task.FromResult(current.IsLoaded ? current.ConnectionString : string.Empty);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Current tenant connection string alınamadı");
+                return Task.FromResult(string.Empty);
+            }
         }
 
-        public async ValueTask DisposeAsync()
+        public void ClearCurrentTenant()
         {
-            if(_disposed)
-                return;
+            lock (_tenantLock)
+            {
+                _currentTenant = TenantContext.Empty;
+            }
 
-            await ClearCurrentTenantAsync();
-            _tenantSemaphore.Dispose();
-            _connectionCache.Clear();
-            _disposed = true;
+            _logger.LogInformation("Tenant bağlantısı temizlendi");
+            TenantChanged?.Invoke(TenantContext.Empty);
         }
-
-        public void Dispose() { DisposeAsync().AsTask().GetAwaiter().GetResult(); }
-        #endregion
-
-        #region Helper Types
-        private record ConnectionCacheEntry(string ConnectionString, DateTime LastValidated, string DatabasePath);
-        #endregion
     }
 }

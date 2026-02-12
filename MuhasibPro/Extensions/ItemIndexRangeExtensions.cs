@@ -13,7 +13,7 @@
 #endregion
 
 using Microsoft.UI.Xaml.Data;
-using MuhasibPro.ViewModels.Insrastructure.Common;
+using MuhasibPro.ViewModels.Infrastructure.Common;
 
 namespace MuhasibPro.Extensions
 {

@@ -1,5 +1,6 @@
 ﻿using MuhasibPro.Business.Contracts.DatabaseServices.SistemDatabaseServices;
 using MuhasibPro.Business.Contracts.UIServices;
+using MuhasibPro.Data.Contracts.Database.SistemDatabase;
 using MuhasibPro.HostBuilders;
 using MuhasibPro.Services.CommonServices;
 using MuhasibPro.ViewModels.ViewModels.Shell;
@@ -54,20 +55,18 @@ namespace MuhasibPro.Configurations
         {
             try
             {
-                var sistemDbService = ServiceLocator.Current.GetService<ISistemDatabaseService>();
+                var sistemDbService = ServiceLocator.Current.GetService<ISistemMigrationManager>();
                 var statusBarService = ServiceLocator.Current.GetService<IStatusBarService>();
 
                 var initilize = await sistemDbService.InitializeSistemDatabaseAsync();
 
-                if (!initilize.intializeState)
+                if (!initilize.initializeState)
                 {
-                    return (false, message: initilize.message);
-                }
-
-                await sistemDbService.InitializeSistemDatabaseAsync();
+                    return (false, initilize.message);
+                }                
                 statusBarService.DatabaseConnectionMessage = initilize.message;
                 
-                return (true, message: initilize.message);
+                return (true, initilize.message);
             }
             catch (Exception ex)
             {

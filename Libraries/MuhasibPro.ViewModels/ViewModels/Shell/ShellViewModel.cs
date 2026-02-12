@@ -1,7 +1,7 @@
 ﻿using MuhasibPro.Business.Contracts.SistemServices.Authentication;
 using MuhasibPro.Business.Contracts.UIServices.CommonServices;
 using MuhasibPro.Business.DTOModel.SistemModel;
-using MuhasibPro.ViewModels.Insrastructure.ViewModels;
+using MuhasibPro.ViewModels.Infrastructure.ViewModels;
 
 namespace MuhasibPro.ViewModels.ViewModels.Shell
 {

@@ -38,12 +38,12 @@ namespace MuhasibPro.HostBuilders
                 services.AddScoped<IStatusMessageService, StatusMessageService>();
                 services.AddScoped<IBitmapToolsService, BitmapToolsService>();
                 //services.AddScoped<IWebViewService, WebViewService>();
+                services.AddSingleton<IStartupApplicationService, StartupApplicationService>();
 
 
                 services.AddScoped<ICommonServices, CommonServices>();
                 services.AddScoped<IContextService, ContextService>();
                 services.AddScoped<INavigationService, NavigationService>();
-                services.AddScoped<IStartupApplicationService, StartupApplicationService>();
 
 
 

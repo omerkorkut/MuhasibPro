@@ -4,8 +4,8 @@ using MuhasibPro.Business.Contracts.UIServices.CommonServices;
 using MuhasibPro.Business.DTOModel.SistemModel;
 using MuhasibPro.Business.ModelValidator.SistemValidations;
 using MuhasibPro.Domain.Enum;
-using MuhasibPro.ViewModels.Insrastructure.Common;
-using MuhasibPro.ViewModels.Insrastructure.ViewModels;
+using MuhasibPro.ViewModels.Infrastructure.Common;
+using MuhasibPro.ViewModels.Infrastructure.ViewModels;
 using System.Windows.Input;
 
 namespace MuhasibPro.ViewModels.ViewModels.Sistem.Firmalar

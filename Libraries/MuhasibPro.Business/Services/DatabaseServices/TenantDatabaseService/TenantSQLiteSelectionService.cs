@@ -48,6 +48,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
     {
         private readonly ITenantSQLiteSelectionManager _selectionManager;
         private readonly ITenantSQLiteDatabaseManager _databaseManager;
+        private readonly ITenantSQLiteConnectionStringFactory _connectionStringFactory;
         private readonly IMessageService _messageService;
         private readonly ILogService _logService;
 
@@ -55,7 +56,8 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
             ITenantSQLiteSelectionManager selectionManager,
             IMessageService messageService,
             ILogService logService,
-            ITenantSQLiteDatabaseManager databaseManager)
+            ITenantSQLiteDatabaseManager databaseManager,
+            ITenantSQLiteConnectionStringFactory connectionStringFactory)
         {
             _selectionManager = selectionManager;
             _messageService = messageService;
@@ -64,6 +66,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
             // Manager'daki değişiklikleri MessageService ile yayınla
             _selectionManager.TenantChanged += OnManagerTenantChanged;
             _databaseManager = databaseManager;
+            _connectionStringFactory = connectionStringFactory;
         }
 
         private void OnManagerTenantChanged(TenantContext tenant)
@@ -74,8 +77,8 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
 
         public bool IsTenantLoaded => _selectionManager.IsTenantLoaded;
 
-        public async Task ClearCurrentTenantAsync()
-            => await _selectionManager.ClearCurrentTenantAsync();
+        public void ClearCurrentTenantAsync()
+            => _selectionManager.ClearCurrentTenant();
 
         public async Task<ApiDataResponse<bool>> DisconnectCurrentTenantAsync()
         {
@@ -88,7 +91,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
                         message: "🟢 Zaten aktif bir bağlantı bulunamadı");
                 }
 
-                await ClearCurrentTenantAsync();
+                ClearCurrentTenantAsync();
 
                 await _logService.SistemLogService.SistemLogInformationAsync(
                     "Mali Dönem Seçimi",
@@ -130,7 +133,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
             {
                 return new ErrorApiDataResponse<TenantContext>(
                     data: null,
-                    message: "📛 Veritabanı adı boş olamaz");
+                    message: "Veritabanı adı boş olamaz");
             }
 
             // Aynı tenant kontrolü (case-insensitive)
@@ -140,8 +143,24 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
             {
                 return new ErrorApiDataResponse<TenantContext>(
                     data: CurrentTenant,
-                    message: "🔁 Zaten bu mali dönemi kullanıyorsunuz!");
+                    message: "Zaten bu mali dönemi kullanıyorsunuz!");
             }
+            var validateConnection = await _connectionStringFactory.ValidateConnectionStringAsync(databaseName);
+            if(!validateConnection.canConnect)
+            {
+                return new ErrorApiDataResponse<TenantContext>(
+                    data: null,
+                    message: $"Veritabanı bağlantı dizesi oluşturulamadı: {databaseName}");
+            }
+            var tenantContext = new TenantContext
+            {
+                DatabaseName = databaseName,
+                DatabaseType = Domain.Enum.DatabaseEnum.DatabaseType.SQLite,
+                ConnectionString = validateConnection.connectionString,
+                 LoadedAt = DateTime.UtcNow,
+                 Message = validateConnection.canConnect ? null : $"Veritabanına bağlantı doğrulanamadı: {databaseName}"
+
+            };
             var initilizeDatabase = await _databaseManager.InitializeTenantDatabaseAsync(databaseName);
             if(!initilizeDatabase.IsHealthy)
             {
@@ -149,8 +168,8 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService
             }
             try
             {
-                var newTenant = await _selectionManager.SwitchToTenantAsync(
-                    databaseName);
+                var newTenant = _selectionManager.SwitchToTenantAsync(
+                    tenantContext);
 
                 // Business logging - sadece başarılıysa
                 if (newTenant.IsLoaded)

@@ -4,10 +4,10 @@ using MuhasibPro.Business.DTOModel;
 using MuhasibPro.Domain.Common;
 using MuhasibPro.Domain.Enum;
 using MuhasibPro.Domain.Models;
-using MuhasibPro.ViewModels.Insrastructure.Common;
+using MuhasibPro.ViewModels.Infrastructure.Common;
 using System.Windows.Input;
 
-namespace MuhasibPro.ViewModels.Insrastructure.ViewModels;
+namespace MuhasibPro.ViewModels.Infrastructure.ViewModels;
 
 public abstract class GenericDetailsViewModel<TModel> : ViewModelBase where TModel : ObservableObject, new()
 {

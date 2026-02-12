@@ -2,7 +2,7 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 
-namespace MuhasibPro.ViewModels.Insrastructure.Extensions
+namespace MuhasibPro.ViewModels.Infrastructure.Extensions
 {
     public class ObservableRangeCollection<T> : ObservableCollection<T>
     {

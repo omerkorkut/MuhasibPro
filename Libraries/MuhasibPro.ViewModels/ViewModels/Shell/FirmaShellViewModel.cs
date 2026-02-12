@@ -4,7 +4,7 @@ using MuhasibPro.Business.Contracts.SistemServices.Authentication;
 using MuhasibPro.Business.Contracts.UIServices;
 using MuhasibPro.Business.Contracts.UIServices.CommonServices;
 using MuhasibPro.Business.DTOModel.SistemModel;
-using MuhasibPro.ViewModels.Insrastructure.Common;
+using MuhasibPro.ViewModels.Infrastructure.Common;
 using MuhasibPro.ViewModels.ViewModels.Sistem.Firmalar;
 using MuhasibPro.ViewModels.ViewModels.Sistem.MaliDonemler;
 using System.Windows.Input;
@@ -48,7 +48,7 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
 
             PropertyChanged += (s, e) =>
             {
-                if (e.PropertyName == nameof(HasSelection))
+                if(e.PropertyName == nameof(HasSelection))
                 {
                     (DevamEtCommand as AsyncRelayCommand)?.RaiseCanExecuteChanged();
                 }
@@ -65,7 +65,7 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
             get => _selectedFirma;
             private set
             {
-                if (Set(ref _selectedFirma, value))
+                if(Set(ref _selectedFirma, value))
                 {
                     NotifyPropertyChanged(nameof(IsFirmaSelected));
                     NotifyPropertyChanged(nameof(HasSelection));
@@ -82,19 +82,18 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
             get => _selectedMaliDonem;
             private set
             {
-                if (Set(ref _selectedMaliDonem, value))
+                if(Set(ref _selectedMaliDonem, value))
                 {
                     NotifyPropertyChanged(nameof(IsMaliDonemSelected));
                     NotifyPropertyChanged(nameof(HasSelection));
                     NotifyPropertyChanged(nameof(DonemBilgisi));
                     NotifyPropertyChanged(nameof(VeritabaniBilgisi));
                     NotifyPropertyChanged(nameof(VeritabaniBaglantiDurumu));
-                    NotifyPropertyChanged(nameof(SecimOzeti));
-                    _ = CheckDatabaseHealthAsync();
+                    NotifyPropertyChanged(nameof(SecimOzeti));                    
                 }
             }
         }
-
+  
         // UI State Properties
         public bool IsFirmaSelected => SelectedFirma != null;
 
@@ -105,8 +104,8 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
         // Özet Panel Properties
         public string SecimOzeti => IsFirmaSelected
             ? FirmaBilgisi + (IsMaliDonemSelected ? $" | {DonemBilgisi}" : "")
-             : "Henüz seçim yapılmadı";
-            
+            : "Henüz seçim yapılmadı";
+
 
         public string FirmaBilgisi => IsFirmaSelected ? $"{SelectedFirma.KisaUnvani}" : "Firma seçilmedi";
 
@@ -141,23 +140,21 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
         public async Task LoadAsync(ShellArgs args)
         {
             ViewModelArgs = args;
-            
+
             try
             {
                 await base.LoadAsync(new FirmaListArgs());
-                if (FirmaList.Items == null || FirmaList.Items.Count == 0)
+                if(FirmaList.Items == null || FirmaList.Items.Count == 0)
                 {
                     await HandleNoFirmaFound();
                     return;
                 }
                 await LoadLastSelection();
-            }
-            catch (Exception ex)
+            } catch(Exception ex)
             {
                 await DialogService.ShowAsync("Hata", $"Veriler yüklenirken hata: {ex.Message}");
                 await LogSistemExceptionAsync("FirmaDonemSelect", "LoadAsync", ex);
-            }
-            finally
+            } finally
             {
                 IsBusy = false;
             }
@@ -171,7 +168,7 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
                 "Evet",
                 "Hayır");
 
-            if (result)
+            if(result)
             {
                 await NavigationService.CreateNewViewAsync<FirmaDetailsViewModel>(new FirmaDetailsArgs());
             }
@@ -184,10 +181,10 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
             {
                 // Son seçilen firma ID'sini al
                 var lastFirmaId = await LocalSettingsService.ReadSettingAsync<long>("LastSelectedFirmaId");
-                if (lastFirmaId > 0)
+                if(lastFirmaId > 0)
                 {
                     var lastFirma = FirmaList.Items.FirstOrDefault(f => f.Id == lastFirmaId);
-                    if (lastFirma != null)
+                    if(lastFirma != null)
                     {
                         // Firma seçimini otomatik yap
                         FirmaList.SelectedItem = lastFirma;
@@ -195,10 +192,10 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
 
                         // Son seçilen dönemi al
                         var lastDonemId = await LocalSettingsService.ReadSettingAsync<long>("LastSelectedDonemId");
-                        if (lastDonemId > 0)
+                        if(lastDonemId > 0)
                         {
                             var lastDonem = MaliDonemList.Items?.FirstOrDefault(d => d.Id == lastDonemId);
-                            if (lastDonem != null)
+                            if(lastDonem != null)
                             {
                                 MaliDonemList.SelectedItem = lastDonem;
                                 SelectedMaliDonem = lastDonem;
@@ -206,13 +203,11 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
                         }
                     }
                 }
-            }
-            catch (Exception ex)
+            } catch(Exception ex)
             {
                 // Son seçim yüklenemezse sessizce devam et
                 await LogSistemExceptionAsync("FirmaDonemSelect", "LoadLastSelection", ex);
-            }
-            finally
+            } finally
             {
                 IsBusy = false;
             }
@@ -230,7 +225,7 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
 
         private async void OnMessage(FirmaListViewModel viewModel, string message, object args)
         {
-            if (viewModel == FirmaList && message == "ItemSelected")
+            if(viewModel == FirmaList && message == "ItemSelected")
             {
                 await ContextService.RunAsync(
                     () =>
@@ -243,13 +238,17 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
 
         private async void OnMaliDonemMessage(MaliDonemListViewModel viewModel, string message, object args)
         {
-            if (viewModel == MaliDonemList && message == "ItemSelected")
+            if(viewModel == MaliDonemList && message == "ItemSelected")
             {
                 await ContextService.RunAsync(
-                    () =>
+                    async () =>
                     {
                         MaliDonemViewModel.OnItemSelected();
                         SelectedMaliDonem = MaliDonemList.SelectedItem;
+                        if(SelectedMaliDonem != null)
+                        {
+                            await SwitchToTenantAndUpdateState(SelectedMaliDonem.DatabaseName, SelectedFirma, SelectedMaliDonem);                           
+                        }
                         NotifyPropertyChanged(nameof(HasSelection));
                     });
             }
@@ -259,7 +258,7 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
         #region Command Handlers
         private async Task ExecuteDevamEt()
         {
-            if (!HasSelection)
+            if(!HasSelection)
                 return;
             try
             {
@@ -269,26 +268,24 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
                 // Log kaydet
                 await 
                     LogSistemInformationAsync(
-                        "FirmaDonemSelect",
-                        "Firma ve dönem seçildi",
-                        "Seçim",
-                        $"{SelectedFirma.KisaUnvani} - {SelectedMaliDonem.MaliYil}");
+                    "FirmaDonemSelect",
+                    "Firma ve dönem seçildi",
+                    "Seçim",
+                    $"{SelectedFirma.KisaUnvani} - {SelectedMaliDonem.MaliYil}");
 
                 // ShellArgs'ı güncelle
                 SelectedFirmaService.SelectedFirma = SelectedFirma;
                 SelectedFirmaService.SelectedMaliDonem = SelectedMaliDonem;
 
-                await SwitchToTenantAndUpdateState(SelectedMaliDonem.DatabaseName, SelectedFirma, SelectedMaliDonem);
+                
                 ViewModelArgs.ViewModel = typeof(DashboardViewModel);
                 // Ana uygulamaya geç
                 NavigationService.Navigate<MainShellViewModel>(ViewModelArgs);
-            }
-            catch (Exception ex)
+            } catch(Exception ex)
             {
                 await DialogService.ShowAsync("Hata", $"İşlem sırasında hata: {ex.Message}");
                 await LogSistemExceptionAsync("FirmaDonemSelect", "ExecuteDevamEt", ex);
-            }
-            finally
+            } finally
             {
                 IsBusy = false;
             }
@@ -300,8 +297,7 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
             {
                 await LocalSettingsService.SaveSettingAsync("LastSelectedFirmaId", SelectedFirma.Id);
                 await LocalSettingsService.SaveSettingAsync("LastSelectedDonemId", SelectedMaliDonem.Id);
-            }
-            catch (Exception ex)
+            } catch(Exception ex)
             {
                 // Kaydetme hatası kritik değil, sessizce devam et
                 await LogSistemExceptionAsync("FirmaDonemSelect", "SaveLastSelection", ex);
@@ -312,36 +308,20 @@ namespace MuhasibPro.ViewModels.ViewModels.Shell
         {
             // 1. Tenant'a bağlan (DI güncellenir)
             var result = await TenantWorkflowService.SwitchTenantAsync(databaseName);
+            if (result.Data.IsLoaded)
+            {
+                // 2. Application State'i güncelle
+                SelectedFirmaService.SelectedFirma = firma;
+                SelectedFirmaService.SelectedMaliDonem = maliDonem;
+                SelectedFirmaService.ConnectedTenantDb = result.Data;
+                VeritabaniBaglantiDurumu = $"{result.Message}";
+               
+            }
 
-            // 2. Application State'i güncelle
-            SelectedFirmaService.SelectedFirma = firma;
-            SelectedFirmaService.SelectedMaliDonem = maliDonem;
-            SelectedFirmaService.ConnectedTenantDb = result.Data;
-
+            
             // 3. UI güncellenir (StateChanged event otomatik fire olur)
         }
-        
-        private async Task CheckDatabaseHealthAsync()
-        {
-            if (SelectedMaliDonem == null)
-            {
-                VeritabaniBaglantiDurumu = "Mali dönem seçilmedi";
-                return;
-            }
 
-            VeritabaniBaglantiDurumu = "Kontrol ediliyor...";
-
-            try
-            {
-                var result = await TenantWorkflowService.ValidateTenantDatabaseAsync(SelectedMaliDonem.DatabaseName);
-
-                VeritabaniBaglantiDurumu = result.isValid ? result.Message : "Bağlantı başarısız";
-            }
-            catch
-            {
-                VeritabaniBaglantiDurumu = "Bağlantı hatası";
-            }
-        }
         #endregion
     }
 }

@@ -8,7 +8,7 @@ namespace MuhasibPro.Business.Contracts.DatabaseServices.SistemDatabaseServices
         Task<(bool isValid, string Message)> ValidateSistemDatabaseAsync();
         Task<ApiDataResponse<DatabaseConnectionAnalysis>> GetSistemDatabaseStateAsync();
         
-        Task<(bool intializeState, string message)> InitializeSistemDatabaseAsync();
+        Task<(bool initializeState, string message)> InitializeSistemDatabaseAsync();
         
     }
 }

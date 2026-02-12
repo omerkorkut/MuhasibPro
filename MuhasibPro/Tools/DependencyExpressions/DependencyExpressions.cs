@@ -1,4 +1,4 @@
-﻿using MuhasibPro.ViewModels.Insrastructure.Common;
+﻿using MuhasibPro.ViewModels.Infrastructure.Common;
 using System.Collections.Concurrent;
 
 namespace MuhasibPro.Tools.DependencyExpressions;

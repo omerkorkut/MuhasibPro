@@ -164,7 +164,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService.Co
                 if (_selectionService.IsTenantLoaded)
                 {
                     var currentTenantResponse = _selectionService.CurrentTenant;
-                    if (currentTenantResponse.IsLoaded && currentTenantResponse.CanConnect)
+                    if (currentTenantResponse.IsLoaded)
                     {
                         isCurrentTenantDeleting = currentTenantResponse.DatabaseName == request.DatabaseName;
                     }
@@ -225,7 +225,7 @@ namespace MuhasibPro.Business.Services.DatabaseServices.TenantDatabaseService.Co
                         });
                     if (isCurrentTenantDeleting)
                     {
-                        await _selectionService.ClearCurrentTenantAsync();
+                        _selectionService.ClearCurrentTenantAsync();
                     }
                     if (!request.IsCurrentTenantDeletingBeforeBackup)
                 {

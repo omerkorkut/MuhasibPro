@@ -161,7 +161,7 @@ namespace MuhasibPro.Data.Database.SistemDatabase
 
                 try
                 {
-                    return await InternalInitializeAsync().ConfigureAwait(false);
+                    return await InternalInitializeAsync();
                 }
                 finally
                 {
